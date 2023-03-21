@@ -8,6 +8,7 @@ from pycbc.filter import resample_to_delta_t, highpass
 import jax
 from jax import jit, lax, grad
 import jax.numpy as jnp
+import math
 
 @jit
 def get_kmin_kmax(f_l, f_u, delta_f):
@@ -71,14 +72,6 @@ def matched_filter(template_fs, data_fs,  psd, fs, delta_f, f_l, f_u):
     # Calculate the optimal filter
     optimal = data_fs * template_fs.conj() * psd
     
-    """ 
-    # Initialize and update a temporary Jax array
-    tmp = jnp.zeros(28*2048, dtype=data_fs.dtype) # 1 / delta_f * sample rate
-    tmp = tmp.at[0:len(template_fs)].set(optimal) 
-    tmp = tmp.at[0:28*15].set(0.) # setting index upto 420 to value zero as sort of a low_freq_cutoff
-    print(len(tmp))
-    print(28*15)
-    """
     # Compute the matched filter in the time domain
     optimal_time = 2 * jnp.fft.ifft(optimal)
 
@@ -155,28 +148,23 @@ def main():
     high_freq = 1000.
     f_ref = low_freq
 
-    template_freqs = waveform_template(mass, freqs, params, f_ref, psd_jax, fdata_jax)
-
     # Matched filter
     total_bins = freq_bins * sampling_rate
     kmin, kmax = get_kmin_kmax(low_freq, high_freq, delta_f)
 
-    template_jax = apply_kmin_kmax(template_freqs, low_freq, high_freq, total_bins, kmin, kmax)
-    fdata_jax = apply_kmin_kmax(fdata_jax, low_freq, high_freq, total_bins, kmin, kmax)
-    psd_jax = apply_kmin_kmax(psd_jax, low_freq, high_freq, total_bins, kmin, kmax)
+    fdata_jax_cropped = apply_kmin_kmax(fdata_jax, low_freq, high_freq, total_bins, kmin, kmax)
+    psd_jax_cropped = apply_kmin_kmax(psd_jax, low_freq, high_freq, total_bins, kmin, kmax)
     
-    template_jax = template_jax[kmin:kmax]
-    fdata_jax = fdata_jax[kmin:kmax]
-    psd_jax = psd_jax[kmin:kmax]
-    inverse_psd_jax = 1 / psd_jax
+    fdata_jax_cropped = fdata_jax_cropped[kmin:kmax]
+    psd_jax_cropped = psd_jax_cropped[kmin:kmax]
+    inverse_psd_jax_cropped = 1 / psd_jax_cropped
 
-    snr = matched_filter(template_jax, fdata_jax, inverse_psd_jax, freqs, delta_f, low_freq, high_freq)
-    
-    def make_function(freqs, f_ref, inverse_psd_jax, fdata_jax, delta_f, params):
+    def make_function(freqs, f_ref, psd_jax, inverse_psd_jax_cropped, fdata_jax, fdata_jax_cropped, delta_f, params):
         def snr(mass):
             template_freqs = waveform_template(mass, freqs, params, f_ref, psd_jax, fdata_jax)
-            inverse_psd_jax = 1 / psd_jax
-            snr = matched_filter(template_jax, fdata_jax, inverse_psd_jax, freqs, delta_f, low_freq, high_freq)
+            template_freqs = apply_kmin_kmax(template_freqs, low_freq, high_freq, total_bins, kmin, kmax)
+            template_freqs = template_freqs[kmin:kmax]
+            snr = matched_filter(template_freqs, fdata_jax_cropped, inverse_psd_jax_cropped, freqs, delta_f, low_freq, high_freq)
             
             tmp = jnp.zeros(len(snr))
             tmp = tmp.at[0:len(snr)].set(snr)
@@ -187,58 +175,31 @@ def main():
 
         return jit(snr)
 
-    snr_func = make_function(freqs, f_ref, psd_jax, fdata_jax, delta_f, params)
-    print(snr_func(mass)) 
+    snr_func = make_function(freqs, f_ref, psd_jax, inverse_psd_jax_cropped,fdata_jax, fdata_jax_cropped, delta_f, params)
     dsnr = jit(grad(snr_func))
-    print(dsnr(mass))
 
-    """
-    print(snr_func(mass))
-    dsnr = jit(grad(snr_func))
-    print(dsnr(30.))
-    print(dsnr(36.)) 
-    """
+    for i in range(30):
+        mass = 36. + (i/10)
+        snr_val = snr_func(mass)
+        grad_val = dsnr(mass)
+        snr_str = "{:.12f}".format(snr_val) if not math.isnan(snr_val) else " " * 12 + "NaN"
+        grad_str = "{:.12f}".format(grad_val) if not math.isnan(grad_val) else " " * 12 + "NaN"
+        print("mass: {:>6.1f}, snr: {:>12}, grad: {:>6}".format(mass, snr_str, grad_str))
 
-    # create new freq for plots
-    freqs = jnp.linspace(0, sampling_rate, freq_bins*sampling_rate)
-    freqs = freqs[kmin:kmax]
-
-    psd_jax = 1 / inverse_psd_jax
-    snr = 10*snr[:len(snr)-5000]
-    max_snr = jnp.abs(snr).max()
-    print(f"max_snr: {max_snr}")
-
-    # Create figure
-    fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, figsize=(8, 10))
-
-    # plot template
-    ax1.loglog(freqs, jnp.abs(template_jax))
-    ax1.set_xlabel('Frequency (Hz)')
-    ax1.set_ylabel('Strain amplitude')
-    ax1.set_title('Template waveform')
-
-    # plot data
-    ax2.loglog(freqs, jnp.abs(fdata_jax))
-    ax2.set_xlabel('Frequency (Hz)')
-    ax2.set_ylabel('Strain amplitude')
-    ax2.set_title('GW data')
-
-    # plot PSD
-    ax3.loglog(freqs, psd_jax)
-    ax3.set_xlabel('Frequency (Hz)')
-    ax3.set_ylabel('PSD')
-    ax3.set_title('Power spectral density')
-
-    # plot SNR
-    ax4.plot(jnp.abs(snr))
-    ax4.set_xlabel('Index')
-    ax4.set_ylabel('SNR')
-    ax4.set_title(f'Signal-to-noise ratio (Max SNR: {max_snr:.2f})')
-    ax4.legend(['SNR'])
     
-    plt.tight_layout()
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    debug_template = waveform_template(36.5, freqs, params, f_ref, psd_jax, fdata_jax)
+    print(len(debug_template))
 
-    #plt.show() 
+    counts = 0
+    for i in abs(debug_template):
+        if math.isnan(i):
+            #print(i)
+            counts += 1
+    print(counts)
+    
+    if len(debug_template) == counts:
+        print(f"all values in debug template are NaN")
 
 if __name__ =="__main__":
     main()
