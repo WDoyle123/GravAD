@@ -199,8 +199,6 @@ def main():
     print(dsnr(36.)) 
     """
 
-
-
     # create new freq for plots
     freqs = jnp.linspace(0, sampling_rate, freq_bins*sampling_rate)
     freqs = freqs[kmin:kmax]
