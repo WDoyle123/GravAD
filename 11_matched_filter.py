@@ -78,10 +78,10 @@ def matched_filter(template_fs, data_fs,  psd):
 
     # Compute the normalisation constant
     sigmasq = 2 * jnp.sum(template_fs * template_fs.conj() * psd)
-    sigma = jnp.sqrt(jnp.abs(sigmasq)) / 2048.
+    sigma = jnp.sqrt(jnp.abs(sigmasq)) / 2048. 
     
     # Compute the signal-to-noise ratio
-    snr_complex = optimal_time / sigma
+    snr_complex = optimal_time / sigma 
     snr = jnp.abs(snr_complex)
     
     # Return the signal-to-noise ratio array
@@ -115,7 +115,8 @@ def make_function(freqs, f_ref, psd_jax, inverse_psd_jax_cropped, fdata_jax, fda
         template_freqs = apply_kmin_kmax(template_freqs, low_freq, high_freq, total_bins, kmin, kmax)
         template_freqs = template_freqs[kmin:kmax]
         snr = matched_filter(template_freqs, fdata_jax_cropped, inverse_psd_jax_cropped)
-
+        
+        # remove snr artifact
         tmp = jnp.zeros(len(snr))
         tmp = tmp.at[0:len(snr)].set(snr)
         tmp = tmp.at[0:5000].set(0)
@@ -130,25 +131,25 @@ def main():
     # Get gw wave data
     eventname = "GW150914"
     merger = Merger(eventname)
-    strain = 1e22*merger.strain("H1")
+    strain = 1e22 * merger.strain("H1")
     sampling_rate = int(2048)
-    delta_f = 1.0/sampling_rate
+    delta_f = 1.0 / sampling_rate
     strain = resample_to_delta_t(highpass(strain, 15.0), delta_f)
-    conditioned = strain.crop(2,2)
+    conditioned = strain.crop(2, 2)
     fdata = conditioned.to_frequencyseries()
     fdata_jax = jnp.array(fdata)
 
     # Get psd
     psd = conditioned.psd(4)
     psd = interpolate(psd, conditioned.delta_f)
-    psd = inverse_spectrum_truncation(psd, int(4*conditioned.sample_rate), low_frequency_cutoff=15)
+    psd = inverse_spectrum_truncation(psd, int(4 * conditioned.sample_rate), low_frequency_cutoff = 15)
     psd_jax = jnp.array(psd)
     inverse_psd_jax = 1 / psd_jax
 
     # make sure data has the sampe delta_f
     npts_data = len(conditioned)
-    nyquist_freq_data = 1.0 / (delta_f*2)
-    freqs = jnp.linspace(0, nyquist_freq_data, int(1+28*nyquist_freq_data))
+    nyquist_freq_data = 1.0 / (delta_f * 2)
+    freqs = jnp.linspace(0, nyquist_freq_data, int(1 + 28 * nyquist_freq_data))
     delta_f = freqs[1]-freqs[0]
     freq_bins = int(1 / delta_f)
     
@@ -169,7 +170,6 @@ def main():
     total_bins = freq_bins * sampling_rate
     kmin, kmax = get_kmin_kmax(low_freq, high_freq, delta_f)
 
-
     fdata_jax_cropped = apply_kmin_kmax(fdata_jax, low_freq, high_freq, total_bins, kmin, kmax)
     psd_jax_cropped = apply_kmin_kmax(psd_jax, low_freq, high_freq, total_bins, kmin, kmax)
     
@@ -180,7 +180,6 @@ def main():
     snr_func = make_function(freqs, f_ref, psd_jax, inverse_psd_jax_cropped,fdata_jax, fdata_jax_cropped, delta_f, params, low_freq, high_freq, total_bins,kmin, kmax)
     dsnr = jit(grad(snr_func))
 
-    
     for i in range(30):
         mass = 36. + (i/10)
         snr_val = snr_func(mass)
@@ -189,7 +188,6 @@ def main():
         grad_str = "{:.12f}".format(grad_val) if not math.isnan(grad_val) else " " * 12 + "NaN"
         print("mass: {:>6.1f}, snr: {:>12}, grad: {:>6}".format(mass, snr_str, grad_str))
    
-    
     line = "~" * (75)
     print(line)
     debug_template = waveform_template(36.5, freqs, params, f_ref, psd_jax, fdata_jax)
