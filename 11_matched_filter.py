@@ -45,14 +45,15 @@ def apply_kmin_kmax(template, f_l, f_u, total_bins, kmin, kmax):
     Returns:
     A Jax array with frequency components outside of the specified bounds set to zero.
     """
+    total_bins = int(total_bins)
     tmp = jnp.zeros(total_bins, dtype=template.dtype)
-    tmp = tmp.at[0:len(template)].set(template)
+    tmp = tmp.at[0:(int(total_bins) // 2) + 1].set(template)
     tmp = tmp.at[0:kmin].set(0.)
     tmp = tmp.at[kmax:].set(0.)
     return tmp
 
 @jit
-def matched_filter(template_fs, data_fs,  psd, fs, delta_f, f_l, f_u):
+def matched_filter(template_fs, data_fs,  psd):
     """
     Applies matched filtering to the input data and template, given the power spectral density and
     the sampling frequency.
@@ -108,6 +109,22 @@ def waveform_template(mass, fs, params, f_ref, psd, fdata):
     template, _ = IMRPhenomD.gen_IMRPhenomD_polar(fs, ripple_params, f_ref)
     return template * 1e22
 
+def make_function(freqs, f_ref, psd_jax, inverse_psd_jax_cropped, fdata_jax, fdata_jax_cropped, delta_f, params, low_freq, high_freq, total_bins, kmin,kmax):
+    def snr(mass):
+        template_freqs = waveform_template(mass, freqs, params, f_ref, psd_jax, fdata_jax)
+        template_freqs = apply_kmin_kmax(template_freqs, low_freq, high_freq, total_bins, kmin, kmax)
+        template_freqs = template_freqs[kmin:kmax]
+        snr = matched_filter(template_freqs, fdata_jax_cropped, inverse_psd_jax_cropped)
+
+        tmp = jnp.zeros(len(snr))
+        tmp = tmp.at[0:len(snr)].set(snr)
+        tmp = tmp.at[0:5000].set(0)
+        snr = tmp.at[len(snr)-5000:].set(0)
+        snr = snr * 10
+        return snr.max()
+
+    return jit(snr)
+
 def main():
 
     # Get gw wave data
@@ -134,7 +151,7 @@ def main():
     freqs = jnp.linspace(0, nyquist_freq_data, int(1+28*nyquist_freq_data))
     delta_f = freqs[1]-freqs[0]
     freq_bins = int(1 / delta_f)
-
+    
     # Get template
     chi1 = 0.
     chi2 = 0.
@@ -152,6 +169,7 @@ def main():
     total_bins = freq_bins * sampling_rate
     kmin, kmax = get_kmin_kmax(low_freq, high_freq, delta_f)
 
+
     fdata_jax_cropped = apply_kmin_kmax(fdata_jax, low_freq, high_freq, total_bins, kmin, kmax)
     psd_jax_cropped = apply_kmin_kmax(psd_jax, low_freq, high_freq, total_bins, kmin, kmax)
     
@@ -159,25 +177,10 @@ def main():
     psd_jax_cropped = psd_jax_cropped[kmin:kmax]
     inverse_psd_jax_cropped = 1 / psd_jax_cropped
 
-    def make_function(freqs, f_ref, psd_jax, inverse_psd_jax_cropped, fdata_jax, fdata_jax_cropped, delta_f, params):
-        def snr(mass):
-            template_freqs = waveform_template(mass, freqs, params, f_ref, psd_jax, fdata_jax)
-            template_freqs = apply_kmin_kmax(template_freqs, low_freq, high_freq, total_bins, kmin, kmax)
-            template_freqs = template_freqs[kmin:kmax]
-            snr = matched_filter(template_freqs, fdata_jax_cropped, inverse_psd_jax_cropped, freqs, delta_f, low_freq, high_freq)
-            
-            tmp = jnp.zeros(len(snr))
-            tmp = tmp.at[0:len(snr)].set(snr)
-            tmp = tmp.at[0:5000].set(0)
-            snr = tmp.at[len(snr)-5000:].set(0)
-            snr = snr * 10 
-            return snr.max()
-
-        return jit(snr)
-
-    snr_func = make_function(freqs, f_ref, psd_jax, inverse_psd_jax_cropped,fdata_jax, fdata_jax_cropped, delta_f, params)
+    snr_func = make_function(freqs, f_ref, psd_jax, inverse_psd_jax_cropped,fdata_jax, fdata_jax_cropped, delta_f, params, low_freq, high_freq, total_bins,kmin, kmax)
     dsnr = jit(grad(snr_func))
 
+    
     for i in range(30):
         mass = 36. + (i/10)
         snr_val = snr_func(mass)
@@ -185,9 +188,10 @@ def main():
         snr_str = "{:.12f}".format(snr_val) if not math.isnan(snr_val) else " " * 12 + "NaN"
         grad_str = "{:.12f}".format(grad_val) if not math.isnan(grad_val) else " " * 12 + "NaN"
         print("mass: {:>6.1f}, snr: {:>12}, grad: {:>6}".format(mass, snr_str, grad_str))
-
+   
     
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    line = "~" * (75)
+    print(line)
     debug_template = waveform_template(36.5, freqs, params, f_ref, psd_jax, fdata_jax)
     print(len(debug_template))
 
