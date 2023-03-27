@@ -28,30 +28,6 @@ def get_kmin_kmax(f_l, f_u, delta_f):
     kmax = jnp.array(jnp.floor(f_u / delta_f), dtype=int)
     return kmin, kmax
 
-
-def apply_kmin_kmax(template, f_l, f_u, total_bins, kmin, kmax):
-    """
-    Zero out frequency components in a frequency domain template or signal outside of the
-    specified frequency bounds.
-
-    Args:
-    template: a Jax array representing the frequency signal
-    f_l: a float representing the lower frequency bound
-    f_u: a float representing the upper frequency bound
-    total_bins: an integer representing the total number of frequency bins
-    kmin: an integer representing the minimum frequency bin index
-    kmax: an integer representing the maximum frequency bin index
-
-    Returns:
-    A Jax array with frequency components outside of the specified bounds set to zero.
-    """
-    total_bins = int(total_bins)
-    tmp = jnp.zeros(total_bins, dtype=template.dtype)
-    tmp = tmp.at[0:(int(total_bins) // 2) + 1].set(template)
-    tmp = tmp.at[0:kmin].set(0.)
-    tmp = tmp.at[kmax:].set(0.)
-    return tmp
-
 @jit
 def matched_filter(template_fs, data_fs,  psd):
     """
@@ -105,22 +81,18 @@ def waveform_template(mass, fs, params, f_ref, psd, fdata):
     A Jax array representing the waveform template
     """
     Mc, eta = ms_to_Mc_eta(jnp.array([mass,mass]))
-    ripple_params = jnp.concatenate([jnp.array([Mc, eta]), jnp.array(params)])
+    ripple_params = jnp.concatenate([jnp.array([Mc, eta-0.001]), jnp.array(params)])
     template, _ = IMRPhenomD.gen_IMRPhenomD_polar(fs, ripple_params, f_ref)
     return template * 1e22
 
+
 def make_function(freqs, f_ref, psd_jax, inverse_psd_jax_cropped, fdata_jax, fdata_jax_cropped, delta_f, params, low_freq, high_freq, total_bins, kmin,kmax):
     def snr(mass):
-        template_freqs = waveform_template(mass, freqs, params, f_ref, psd_jax, fdata_jax)
-        template_freqs = apply_kmin_kmax(template_freqs, low_freq, high_freq, total_bins, kmin, kmax)
-        template_freqs = template_freqs[kmin:kmax]
+        template_freqs = waveform_template(mass, freqs[kmin:kmax], params, f_ref, psd_jax, fdata_jax)
         snr = matched_filter(template_freqs, fdata_jax_cropped, inverse_psd_jax_cropped)
         
         # remove snr artifact
-        tmp = jnp.zeros(len(snr))
-        tmp = tmp.at[0:len(snr)].set(snr)
-        tmp = tmp.at[0:5000].set(0)
-        snr = tmp.at[len(snr)-5000:].set(0)
+        snr = snr[5000:-5000]
         snr = snr * 10
         return snr.max()
 
@@ -170,11 +142,8 @@ def main():
     total_bins = freq_bins * sampling_rate
     kmin, kmax = get_kmin_kmax(low_freq, high_freq, delta_f)
 
-    fdata_jax_cropped = apply_kmin_kmax(fdata_jax, low_freq, high_freq, total_bins, kmin, kmax)
-    psd_jax_cropped = apply_kmin_kmax(psd_jax, low_freq, high_freq, total_bins, kmin, kmax)
-    
-    fdata_jax_cropped = fdata_jax_cropped[kmin:kmax]
-    psd_jax_cropped = psd_jax_cropped[kmin:kmax]
+    fdata_jax_cropped = fdata_jax[kmin:kmax] 
+    psd_jax_cropped = psd_jax[kmin:kmax] 
     inverse_psd_jax_cropped = 1 / psd_jax_cropped
 
     snr_func = make_function(freqs, f_ref, psd_jax, inverse_psd_jax_cropped,fdata_jax, fdata_jax_cropped, delta_f, params, low_freq, high_freq, total_bins,kmin, kmax)
