@@ -28,8 +28,11 @@ def get_kmin_kmax(f_l, f_u, delta_f):
     kmax = jnp.array(jnp.floor(f_u / delta_f), dtype=int)
     return kmin, kmax
 
-@jit
-def matched_filter(template_fs, data_fs,  psd):
+def workspace_func(workspace, optimal, kmin, kmax):
+    return workspace.at[kmin:kmax].set(optimal)
+
+
+def matched_filter(template_fs, data_fs,  psd, workspace, kmin, kmax):
     """
     Applies matched filtering to the input data and template, given the power spectral density and
     the sampling frequency.
@@ -48,9 +51,11 @@ def matched_filter(template_fs, data_fs,  psd):
     """
     # Calculate the optimal filter
     optimal = data_fs * template_fs.conj() * psd
-    
+
+    workspace_optimal = workspace.at[kmin:kmax].set(optimal)
+
     # Compute the matched filter in the time domain
-    optimal_time = 2 * jnp.fft.ifft(optimal)
+    optimal_time = 2 * jnp.fft.ifft(workspace_optimal)
 
     # Compute the normalisation constant
     sigmasq = 2 * jnp.sum(template_fs * template_fs.conj() * psd)
@@ -86,10 +91,10 @@ def waveform_template(mass, fs, params, f_ref, psd, fdata):
     return template * 1e22
 
 
-def make_function(freqs, f_ref, psd_jax, inverse_psd_jax_cropped, fdata_jax, fdata_jax_cropped, delta_f, params, low_freq, high_freq, total_bins, kmin,kmax):
+def make_function(freqs, f_ref, psd_jax, inverse_psd_jax_cropped, fdata_jax, fdata_jax_cropped, delta_f, params, low_freq, high_freq, total_bins, kmin,kmax, workspace):
     def snr(mass):
         template_freqs = waveform_template(mass, freqs[kmin:kmax], params, f_ref, psd_jax, fdata_jax)
-        snr = matched_filter(template_freqs, fdata_jax_cropped, inverse_psd_jax_cropped)
+        snr = matched_filter(template_freqs, fdata_jax_cropped, inverse_psd_jax_cropped, workspace, int(kmin), int(kmax))
         
         # remove snr artifact
         snr = snr[5000:-5000]
@@ -146,7 +151,10 @@ def main():
     psd_jax_cropped = psd_jax[kmin:kmax] 
     inverse_psd_jax_cropped = 1 / psd_jax_cropped
 
-    snr_func = make_function(freqs, f_ref, psd_jax, inverse_psd_jax_cropped,fdata_jax, fdata_jax_cropped, delta_f, params, low_freq, high_freq, total_bins,kmin, kmax)
+    workspace = jnp.zeros(int(1 + nyquist_freq_data * freq_bins))
+    print(len(workspace))
+
+    snr_func = make_function(freqs, f_ref, psd_jax, inverse_psd_jax_cropped,fdata_jax, fdata_jax_cropped, delta_f, params, low_freq, high_freq, total_bins,kmin, kmax, workspace)
     dsnr = jit(grad(snr_func))
 
     for i in range(30):
@@ -171,6 +179,8 @@ def main():
     
     if len(debug_template) == counts:
         print(f"all values in debug template are NaN")
+
+
 
 if __name__ =="__main__":
     main()
