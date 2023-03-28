@@ -107,7 +107,7 @@ def make_function(freqs, f_ref, psd_jax, inverse_psd_jax_cropped, fdata_jax, fda
         snr = matched_filter(fdata_jax_cropped, template_freqs, inverse_psd_jax_cropped)
         
         # remove snr artifact
-        snr = snr[5000:-5000]
+        snr = snr[5000:-10000]
         snr = snr * 10
         return snr.max()
 
@@ -176,17 +176,33 @@ def main():
    
     line = "~" * (75)
    
-    template_freqs = waveform_template(36.3, freqs[kmin:kmax], params, f_ref, psd_jax, fdata_jax)
-    plt.plot(freqs[kmin:kmax], template_freqs)
+    template_freqs = waveform_template(80, freqs[kmin:kmax], params, f_ref, psd_jax, fdata_jax)
+    #plt.plot(freqs[kmin:kmax], template_freqs)
     plt.show()
 
     optimal = optimal_func(fdata_jax_cropped, template_freqs, inverse_psd_jax_cropped)
     
     workspace_ = workspace_func(workspace, optimal, kmin, kmax)
     snr = matched_filter(fdata_jax_cropped, template_freqs, inverse_psd_jax_cropped)
+    snr = snr[5000:-10000]
+    snr = snr * 10
     
-    plt.plot(snr)
+    #plt.plot(snr)
     plt.show()
+
+    def my_snr(mass):
+        template_freqs = waveform_template(mass, freqs[kmin:kmax], params, f_ref, psd_jax, fdata_jax)
+        snr = matched_filter(fdata_jax_cropped, template_freqs, inverse_psd_jax_cropped)
+        snr = snr[5000:-10000]
+        snr = snr * 10
+        return snr.max()
+    
+    snrs = [float(my_snr(m)) for m in jnp.linspace(20,80,500)]
+    plt.scatter(jnp.linspace(20,80,500), snrs)
+    plt.show()
+
+    
+
 
 if __name__ =="__main__":
     main()
