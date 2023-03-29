@@ -47,21 +47,19 @@ def apply_bounds(farray, delta_f):
     Returns:
     jax.numpy.array: The frequency array with bounds applied.
     """
-    n = len(farray)
-
     # Calculate the frequency indices corresponding to the lower and upper freq cutoff
     kmin, kmax = freq_indices(delta_f)
 
     # Create a boolean mask for the allowed frequency range
     mask = (jnp.arange(farray.shape[0]) >= kmin) & (jnp.arange(farray.shape[0]) < kmax)
 
-    # Replace NaN values with zeros in the frequency array
-    farray_no_nan = jnp.where(jnp.isnan(farray), 0, farray)
-
     # Apply the mask to the frequency array
-    farray_masked = farray_no_nan * mask
+    farray_masked = farray * mask
+        
+    farray_masked_no_nan = jnp.where(jnp.isnan(farray_masked), 0, farray_masked)
 
-    return farray_masked
+    return farray_masked_no_nan
+
 @jit
 def matched_filter_func(template, data, inverse_psd):
     """
@@ -120,15 +118,11 @@ def calc_snr(template, data, inverse_psd, delta_f):
     Returns:
     jax.numpy.array: SNR time series array
     """
-    template = apply_bounds(template, delta_f)
-    data = apply_bounds(data, delta_f)
-    inverse_psd = apply_bounds(inverse_psd, delta_f)
-
     # Compute the matched filter frequency series array
     matched_filter = matched_filter_func(template, data, inverse_psd)
 
     # Apply bounds and compute the mathced filter time series array
-    matched_filter_time_series = matched_filter_ifft_func(matched_filter)
+    matched_filter_time_series = matched_filter_ifft_func(apply_bounds(matched_filter, delta_f))
 
     # Calculate the normalisation constant, sigma
     sigma = sigma_func(template, inverse_psd)
@@ -153,6 +147,9 @@ def gen_waveform(mass, freqs, params):
     Returns:
     jax.numpy.array: The generated waveform template scaled by factor of 1e22
     """
+    # +1 fudge factor removes nan from dsnr. (higher factor reduces snr value and increases dsnr values)
+    freqs = freqs + 1
+
     # Calculates the chirp mass (Mc) and symmetric mass ratio (eta) from input masses
     Mc, eta = ms_to_Mc_eta(jnp.array([mass, mass]))
     
@@ -200,6 +197,19 @@ def pre_matched_filter(template, data, psd, delta_f):
         return ValueError("Length of template, data, and psd do not match")
 
 def make_function(data, psd, freqs, params, delta_f):
+    """
+    Creates a function to compute the max snr for a given mass
+
+    Args:
+    data (jax.numpy.array): Data frequency series array
+    psd (jax.numpy.array): Power spectral density frequecy series array
+    freqs (jax.numpy.array): Frequency array from 0 to nyquist frequency with step size of delta_f
+    params (list): List of parameters for waveform
+    delta_f (float): Frequency step size
+
+    Returns:
+    function: The function takes an input mass and returns the max snr
+    """
     def snr(mass):
         ftemplate_jax = jnp.array(gen_waveform(mass, freqs, params))
         snr = pre_matched_filter(ftemplate_jax, data, psd, delta_f)
@@ -207,6 +217,15 @@ def make_function(data, psd, freqs, params, delta_f):
     return jit(snr)
 
 def psd_func(conditioned):
+    """
+    Calculate the power spectral density of the conditioned strain data
+
+    Args:
+    conditioned (pycbc.types.timeseries.TimeSeries): conditioned strain data
+
+    Returns:
+    jax.numpy.array: Power spectral density frequency series array 
+    """
     psd = conditioned.psd(4)
     psd = interpolate(psd, conditioned.delta_f)
     psd = inverse_spectrum_truncation(psd, int(4 * conditioned.sample_rate), low_frequency_cutoff = 15)
@@ -214,21 +233,35 @@ def psd_func(conditioned):
 
 def main():
 
+    # Load the data for event
     merger = Merger(EVENT_NAME)
     strain = merger.strain("H1") * 1e22
+
+    # High-pass filter the data and resample
     strain = resample_to_delta_t(highpass(strain, 15.0), 1 / 2048)
+
+    # Crop the data to remove filter artifacts
     conditioned = strain.crop(2, 2)
+
+    # Convert the condtioned time series data to frequency domain
     fdata = conditioned.to_frequencyseries()
     delta_f = conditioned.delta_f 
     fdata_jax = jnp.array(fdata)
 
+    # Calculate the PSD of the conditioned data
     psd_jax = psd_func(conditioned)
+
+    # Calculate the inverse PSD
     inverse_psd_jax = 1 / psd_jax
 
+    # Create a frequency array from 0 to Nyquist frequency with a step size of delta_f
     nyquist_freq = (SAMPLING_RATE / 2)  
     freqs = jnp.arange(0, nyquist_freq + delta_f, delta_f)
+
+    # Apply frequency bounds to the frequency array
     freqs_cropped = apply_bounds(freqs, delta_f)
 
+    # Define waveform parameters
     chi1 = 0.
     chi2 = 0. 
     tc = 1.0
@@ -237,44 +270,32 @@ def main():
     inclination = 0.
     params = [chi1, chi2, dist_mpc, tc, phic, inclination]
 
+    # Create the SNR function with the given data and parameters
     snr_func = make_function(fdata_jax, psd_jax, freqs, params, delta_f)
+
+    # Compute the gradient of the SNR function
     dsnr = jit(grad(snr_func))
    
-    
-    for i in range(30):
-        mass = 36. + (i/10)
+    # Iterate through a range of masses and compute the SNR and its gradient for each mass
+    for i in range(60):
+        mass = 20. + (i)
         snr_val = snr_func(mass)
         grad_val = dsnr(mass)
         snr_str = "{:.12f}".format(snr_val) if not math.isnan(snr_val) else " " * 12 + "NaN"
         grad_str = "{:.12f}".format(grad_val) if not math.isnan(grad_val) else " " * 12 + "NaN"
         print("mass: {:>6.1f}, snr: {:>12}, grad: {:>6}".format(mass, snr_str, grad_str))
-
+    
+    # SNR function used for plotting
     def my_snr(mass):
         template = gen_waveform(mass, freqs, params)
         snr = pre_matched_filter(template, fdata_jax, psd_jax, delta_f)
         return snr.max()
 
+    # Calculate the SNRs for a range of masses and plot the result
     snrs = [float(my_snr(m)) for m in jnp.linspace(20, 80, 500)]
-    #plt.scatter(jnp.linspace(20, 80, 500), snrs)
-    #plt.show()
+    plt.scatter(jnp.linspace(20, 80, 500), snrs)
+    plt.show()
     
-    
-    
-    template = gen_waveform(36.0, freqs, params)
-    template = template.at[0].set(0.)
-    snr = pre_matched_filter(template, fdata_jax, psd_jax, delta_f)
-    is_nan = jnp.isnan(snr).any()
-    print(is_nan)
-    #plt.plot(snr)
-    #plt.show()
-    kmin, kmax = freq_indices(delta_f)
-    plt.loglog(freqs[kmin:kmax], abs(template[kmin:kmax]))
-    #plt.show()
-    
-    is_nan1 = jnp.isnan(fdata_jax).any()
-    print(is_nan1)
-    is_nan2 = jnp.isnan(inverse_psd_jax).any()
-    print(is_nan2)
-
+      
 if __name__ == "__main__":
     main()
