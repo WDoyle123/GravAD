@@ -4,21 +4,25 @@ import jax.numpy as jnp
 from jax import random
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
+from matplotlib import cm
+from matplotlib.cm import ScalarMappable
 from pycbc.catalog import Merger
 from pycbc.psd import interpolate, inverse_spectrum_truncation
 from pycbc.filter import resample_to_delta_t, highpass
 from ripple.waveforms import IMRPhenomD
 from ripple import ms_to_Mc_eta
 import math
+import time
 
 # Constants
 SAMPLING_RATE = 2048
 LOW_FREQ_CUTOFF = 20.
 HIGH_FREQ_CUTOFF = 1000.
-EVENT_NAME = "GW150914"
+#EVENT_NAME = "GW150914"
+EVENT_NAME = "GW170817"
 MAX_ITERS = 1000
 
-def gen_init_mass(rng_key, min_mass = 10, max_mass = 100):
+def gen_init_mass(rng_key, min_mass = 20, max_mass = 80):
     rng_key, subkey = random.split(rng_key)
     init_mass = random.uniform(subkey, minval = min_mass, maxval = max_mass)
     return init_mass, rng_key
@@ -248,7 +252,7 @@ def get_optimal_mass(init_mass, freqs, params, data, psd, delta_f):
     rng_key = random.PRNGKey(0)
 
     # Set initial temperature and the rate of temperature decrease
-    temperature = 10
+    temperature = 5
     annealing_rate = 0.995
 
     for i in range(MAX_ITERS):
@@ -313,8 +317,10 @@ def main():
     rng_key = random.PRNGKey(0)
     init_mass, rng_key = gen_init_mass(rng_key)
 
+    start_time = time.time()
     results = get_optimal_mass(init_mass, freqs, params, fdata_jax, psd_jax, delta_f)
-    
+    total_time = time.time() - start_time
+
     max_snr = max(results.values(), key=lambda x: x["snr"])
     print(f"Max SNR values: mass={max_snr['mass']}, snr={max_snr['snr']}, gradient={max_snr['gradient']}") 
 
@@ -323,22 +329,43 @@ def main():
     snr_values = [result["snr"] for result in results.values()]
 
     # Create a plot of the SNR values in the order they were computed
-    plt.plot(mass_values, snr_values, "o-", color="grey", alpha=0.25)
-    plt.scatter(mass_values[-1], snr_values[-1], color="blue", label="Final")
-    plt.scatter(max_snr["mass"], max_snr["snr"], color="green", label="Max SNR")
-    plt.scatter(mass_values[0], snr_values[0], color="red", label="Initial")
-    plt.xlabel(f"Mass (inital mass: {init_mass:.2f})")
+    n = len(mass_values)
+    colors = cm.plasma(jnp.linspace(0, 1, n))
+    norm = plt.Normalize(0, n-1)
+    mappable = ScalarMappable(norm=norm, cmap=cm.plasma)
+
+    plt.figure(figsize=(18, 12))
+
+    for i in range(n - 1):
+        plt.plot(mass_values[i:i+2], snr_values[i:i+2], ".-", color=colors[i], alpha=0.25)
+
+    # Add arrows pointing to the Initial, Max SNR, and Final points
+    arrowprops = dict(arrowstyle='->', linewidth=2, color='black')
+
+    plt.annotate(f"Initial: mass: {mass_values[0]:.2f}, SNR: {snr_values[0]:.2f}", xy=(mass_values[0],
+    snr_values[0]), xytext=(20, 30), textcoords='offset points',arrowprops=arrowprops, fontsize=12,
+    color="black", bbox=dict(facecolor='white', edgecolor='none', boxstyle='round,pad=0.2'))
+
+    max_snr_pos = (max_snr["mass"] * 0.95, max_snr["snr"] * 1.005)
+    plt.annotate(f"Peak: mass: {max_snr['mass']:.2f}, SNR: {max_snr['snr']:.2f}", xy=(max_snr["mass"], max_snr["snr"]), xytext=max_snr_pos, textcoords='data',
+                 arrowprops=arrowprops, fontsize=12, color='black', bbox=dict(facecolor='white', edgecolor='none', boxstyle='round,pad=0.2', alpha=0.5))
+
+    final_pos = (mass_values[-1] * 0.95, snr_values[-1] * 1.005)
+    plt.annotate(f"Final: mass: {mass_values[-1]:.2f}, SNR: {snr_values[-1]:.2f}", xy=(mass_values[-1],
+    snr_values[-1]), xytext=final_pos, textcoords='offset points', arrowprops=arrowprops, fontsize=12,
+    color="black", bbox=dict(facecolor='white', edgecolor='none', boxstyle='round,pad=0.2'))
+
+    plt.xlabel(f"Mass (solar mass)")
     plt.ylabel("SNR")
-    plt.title(f"SNR vs Mass, Max SNR: mass={max_snr['mass']:.2f}, snr={max_snr['snr']:.2f}, Iterations: {MAX_ITERS}")
+    plt.title(f"SNR vs Mass (Time taken: {total_time:.2f} seconds)")
+    plt.grid(True)
 
-    # Add legend
-    legend_elements = [Patch(facecolor='red', edgecolor='red', label='Initial'),
-                       Patch(facecolor='green', edgecolor='green', label='Max SNR'),
-                       Patch(facecolor='blue', edgecolor='blue', label='Final')]
-
-    plt.legend(handles=legend_elements)
+    # Create the colorbar
+    cbar = plt.colorbar(mappable, ax=plt.gca())
+    cbar.set_label('SNR Index')
 
     plt.show()
+
 
 if __name__ == "__main__":
     main()
