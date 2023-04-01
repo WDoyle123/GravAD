@@ -18,8 +18,8 @@ import time
 SAMPLING_RATE = 2048
 LOW_FREQ_CUTOFF = 20.
 HIGH_FREQ_CUTOFF = 1000.
-#EVENT_NAME = "GW150914"
-EVENT_NAME = "GW170817"
+EVENT_NAME = "GW150914"
+#EVENT_NAME = "GW170817"
 MAX_ITERS = 1000
 
 def gen_init_mass(rng_key, min_mass = 20, max_mass = 80):
@@ -342,17 +342,19 @@ def main():
     # Add arrows pointing to the Initial, Max SNR, and Final points
     arrowprops = dict(arrowstyle='->', linewidth=2, color='black')
 
+    init_pos = (mass_values[0] * 0.95, snr_values[0] * 1.01)
     plt.annotate(f"Initial: mass: {mass_values[0]:.2f}, SNR: {snr_values[0]:.2f}", xy=(mass_values[0],
-    snr_values[0]), xytext=(20, 30), textcoords='offset points',arrowprops=arrowprops, fontsize=12,
+    snr_values[0]), xytext=init_pos, textcoords='data',arrowprops=arrowprops, fontsize=11,
     color="black", bbox=dict(facecolor='white', edgecolor='none', boxstyle='round,pad=0.2'))
 
-    max_snr_pos = (max_snr["mass"] * 0.95, max_snr["snr"] * 1.005)
-    plt.annotate(f"Peak: mass: {max_snr['mass']:.2f}, SNR: {max_snr['snr']:.2f}", xy=(max_snr["mass"], max_snr["snr"]), xytext=max_snr_pos, textcoords='data',
-                 arrowprops=arrowprops, fontsize=12, color='black', bbox=dict(facecolor='white', edgecolor='none', boxstyle='round,pad=0.2', alpha=0.5))
+    max_snr_pos = (max_snr["mass"] * 0.95, max_snr["snr"] * 1.01)
+    plt.annotate(f"Peak: mass: {max_snr['mass']:.2f}, SNR: {max_snr['snr']:.2f}", xy=(max_snr["mass"],
+    max_snr["snr"]), xytext=max_snr_pos, textcoords='data',arrowprops=arrowprops, fontsize=12,
+    color='black', bbox=dict(facecolor='white', edgecolor='none', boxstyle='round,pad=0.2'))
 
-    final_pos = (mass_values[-1] * 0.95, snr_values[-1] * 1.005)
+    final_pos = (mass_values[-1] * 0.95, snr_values[-1] * 0.95)
     plt.annotate(f"Final: mass: {mass_values[-1]:.2f}, SNR: {snr_values[-1]:.2f}", xy=(mass_values[-1],
-    snr_values[-1]), xytext=final_pos, textcoords='offset points', arrowprops=arrowprops, fontsize=12,
+    snr_values[-1]), xytext=final_pos, textcoords='data', arrowprops=arrowprops, fontsize=12,
     color="black", bbox=dict(facecolor='white', edgecolor='none', boxstyle='round,pad=0.2'))
 
     plt.xlabel(f"Mass (solar mass)")
@@ -363,8 +365,24 @@ def main():
     # Create the colorbar
     cbar = plt.colorbar(mappable, ax=plt.gca())
     cbar.set_label('SNR Index')
-
+    
     plt.show()
+
+    best_template = gen_waveform(max_snr["mass"], freqs, params)
+    best_snr = pre_matched_filter(best_template, fdata_jax, psd_jax, delta_f)
+
+    plt.loglog(freqs, abs(best_template))
+    #plt.show()
+
+    plt.plot(best_snr)
+    #plt.show()
+
+    best_template_ts = jnp.fft.ifft(best_template)
+
+    plt.plot(best_template_ts)
+    #plt.show()
+    plt.plot(abs(best_template_ts))
+    #plt.show()
 
 
 if __name__ == "__main__":
