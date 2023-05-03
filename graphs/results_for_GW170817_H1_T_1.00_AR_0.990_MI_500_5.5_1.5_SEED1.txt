@@ -1,0 +1,1 @@
+{'mass1': 11.0, 'mass2': 11.0, 'snr': 4.9508523840094885, 'gradient1': 0.1530490241946426, 'gradient2': 0.1530490241946426, 'iter': 0, 'final_mass': 22.0, 'event_name': 'GW170817', 'strain': 'H1'}
