@@ -28,7 +28,7 @@ GravAD offers a cutting-edge approach to gravitational wave detection, leveragin
 - [@WDoyle123](https://github.com/WDoyle123)
 - Supervisor [@andrew-lundgren](https://github.com/andrew-lundgren)
 
-## Acknoledgements
+## Acknowledgements
 
 - [ripple](https://github.com/tedwards2412/ripple)
 - [JAX](https://github.com/google/jax)
