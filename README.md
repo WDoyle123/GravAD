@@ -1,3 +1,4 @@
+![Logo](graphs/New Project.png)
 
 # GravAD
 Gravitational Wave Analysis using Auto Differentiation with JAX 
