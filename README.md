@@ -13,9 +13,9 @@
   <a href="https://github.com/WDoyle123/GravAD/issues">Request Feature</a>
 </p>
 
-<p align="center">
-[![forthebadge](https://forthebadge.com/images/badges/made-with-python.svg)](https://forthebadge.com)
-</p>
+<div align="center">
+  [![forthebadge](https://forthebadge.com/images/badges/made-with-python.svg)](https://forthebadge.com)
+</div>
 
 ---
 
