@@ -4,135 +4,135 @@ filename = f"SNR_vs_Combined_Mass_for_{EVENT_NAME}_{STRAIN}_T_{TEMPERATURE:.2f}_
 
 # Screenshot Catalog
 
-![Optimal_Template_for_GW150914_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW150914_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW150914_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW150914_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW150914_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW150914_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW151012_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW151012_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW151012_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW151012_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW151012_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW151012_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW151226_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW151226_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW151226_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW151226_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW151226_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW151226_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW170104_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW170104_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW170104_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW170104_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW170104_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW170104_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW170608_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW170608_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW170608_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW170608_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW170608_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW170608_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW170729_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW170729_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW170729_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW170729_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW170729_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW170729_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW170809_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW170809_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW170809_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW170809_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW170809_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW170809_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW170814_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW170814_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW170814_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW170814_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW170814_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW170814_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW170817_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW170817_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW170817_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW170817_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW170817_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW170817_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW170818_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW170818_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW170818_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW170818_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW170818_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW170818_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW170823_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW170823_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW170823_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![Optimal_Template_for_GW170823_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/Optimal_Template_for_GW170823_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/Optimal_Template_for_GW170823_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW150914_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW150914_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW150914_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW150914_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW150914_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW150914_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW151012_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW151012_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW151012_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW151012_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW151012_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW151012_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW151226_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW151226_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW151226_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW151226_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW151226_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW151226_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW170104_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW170104_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW170104_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW170104_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW170104_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW170104_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW170608_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW170608_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW170608_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW170608_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW170608_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW170608_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW170729_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW170729_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW170729_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW170729_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW170729_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW170729_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW170809_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW170809_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW170809_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW170809_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW170809_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW170809_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW170814_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW170814_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW170814_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW170814_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW170814_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW170814_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW170817_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW170817_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW170817_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW170817_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW170817_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW170817_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW170818_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW170818_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW170818_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW170818_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW170818_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW170818_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW170823_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW170823_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW170823_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Combined_Mass_for_GW170823_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Combined_Mass_for_GW170823_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Combined_Mass_for_GW170823_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW150914_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW150914_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW150914_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW150914_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW150914_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW150914_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW151012_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW151012_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW151012_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW151012_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW151012_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW151012_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW151226_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW151226_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW151226_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW151226_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW151226_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW151226_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW170104_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW170104_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW170104_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW170104_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW170104_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW170104_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW170608_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW170608_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW170608_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW170608_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW170608_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW170608_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW170729_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW170729_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW170729_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW170729_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW170729_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW170729_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW170809_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW170809_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW170809_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW170809_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW170809_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW170809_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW170814_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW170814_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW170814_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW170814_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW170814_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW170814_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW170817_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW170817_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW170817_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW170817_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW170817_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW170817_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW170818_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW170818_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW170818_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW170818_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW170818_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW170818_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW170823_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW170823_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW170823_H1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
-![SNR_vs_Iterations_for_GW170823_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png](/path/to/SNR_vs_Iterations_for_GW170823_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
+![App Screenshot](/path/to/images/SNR_vs_Iterations_for_GW170823_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 
