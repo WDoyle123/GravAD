@@ -43,7 +43,24 @@ GravAD offers a cutting-edge approach to gravitational wave detection, leveragin
 
 ## Installation
 
-*Under Construction*
+### Prerequisites
+
+This software requires Python, and has dependencies that can be installed via pip or conda. You can view the full list of dependencies in the `requirements.txt` file.
+
+### Installation via GitHub
+
+1. Clone the GravAD repository to your local machine:
+```
+git clone https://github.com/WDoyle123/GravAD.git
+```
+2. Navigate to the cloned repository:
+```
+cd GravAD
+```
+3, Install the required packages:
+```
+pip install -r requirements.txt
+```
 
 ## Usage
 
