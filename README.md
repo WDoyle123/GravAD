@@ -45,7 +45,7 @@ GravAD offers a cutting-edge approach to gravitational wave detection, leveragin
 
 ### Prerequisites
 
-This software requires Python, and has dependencies that can be installed via pip or conda. You can view the full list of dependencies in the `requirements.txt` file.
+This software requires Python 3.11.3 or newer, and has dependencies that can be installed via pip or conda. You can view the full list of dependencies in the `requirements.txt` file.
 
 ### Installation via GitHub
 
