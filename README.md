@@ -64,7 +64,38 @@ pip install -r requirements.txt
 
 ## Usage
 
-*Under Construction*
+Once you have installed all the prerequisites and set up GravAD, you can start using it for gravitational wave analysis. 
+
+Here is a simple example of how you might use GravAD:
+
+### Changing the constants
+
+You can alter the detection frequencies, number of iteration GravAD runs for (how many templates), aswell as adjusting the simulated annealing optimisation.
+
+```
+# Constants
+SAMPLING_RATE = 2048
+LOW_FREQ_CUTOFF = 20.
+HIGH_FREQ_CUTOFF = 1000.
+MAX_ITERS = 500
+TEMPERATURE = 1
+ANNEALING_RATE = 0.99
+LRU = 1.5 # Learning Rate Upper
+LRL = 5.5 # Learning Rate Lower
+SEED = 1
+```
+
+### Changing Events and Strains
+
+In the ```main()``` function you can alter which signals you want to detect and from which detector.
+
+```
+events = [
+"GW150914", "GW151012", "GW151226", "GW170104", "GW170608", "GW170729",
+"GW170809", "GW170814", "GW170817", "GW170818", "GW170823"]
+
+strains = ["H1", "H2", "L1", "L2"]
+```
 
 ## Screenshots
 
