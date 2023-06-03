@@ -1,1 +1,1 @@
-{'mass1': 11.0, 'mass2': 11.0, 'snr': 4.9508523840094885, 'gradient1': 0.1530490241946426, 'gradient2': 0.1530490241946426, 'iter': 0, 'final_mass': 22.0, 'event_name': 'GW170817', 'strain': 'H1'}
+{'snr': DeviceArray(4.9508524, dtype=float32), 'mass1s': DeviceArray(11., dtype=float64, weak_type=True), 'mass2s': DeviceArray(11., dtype=float64, weak_type=True), 'iters': 0, 'iter': 0, 'mass1': 11.0, 'mass2': 11.0, 'final_mass': 22.0, 'event_name': 'GW170817', 'strain': 'H1', 'time': 30.925999879837036}
