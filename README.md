@@ -87,7 +87,7 @@ SEED = 1
 
 ### Changing Events and Strains
 
-In the ```main()``` function you can alter which signals you want to detect and from which detector.
+You can alter which signals you want to detect and from which detector.
 
 ```
 STRAINS = ['H1', 'L1']
