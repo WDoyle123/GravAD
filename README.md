@@ -100,7 +100,7 @@ strains = ["H1", "H2", "L1", "L2"]
 ## Screenshots
 
 ![App Screenshot](graphs/SNR_vs_Combined_Mass_for_GW170814_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
-![App Screenshot](graphs/snr_and_aligned_170814_L1_T_1.00_AR_0.990_MI_500_5.5_SEED1.5.png)
+![App Screenshot](graphs/snr_and_aligned_GW170809_L1_T_1.00_AR_0.990_MI_500_5.5_1.5_SEED1.png)
 ![App Screenshot](graphs/contours_GW170814_L1_T_1.00_AR_0.990_MI_500_5.5_SEED1.5.png)
 
 Check out [graphs](./graphs) for more!
