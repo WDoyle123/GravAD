@@ -90,11 +90,9 @@ SEED = 1
 In the ```main()``` function you can alter which signals you want to detect and from which detector.
 
 ```
-events = [
-"GW150914", "GW151012", "GW151226", "GW170104", "GW170608", "GW170729",
-"GW170809", "GW170814", "GW170817", "GW170818", "GW170823"]
-
-strains = ["H1", "H2", "L1", "L2"]
+STRAINS = ['H1', 'L1']
+EVENTS = ["GW150914", "GW151012", "GW151226", "GW170104", "GW170608", "GW170729", "GW170809",
+"GW170814", "GW170817", "GW170818", "GW170823"]
 ```
 
 ## Screenshots
