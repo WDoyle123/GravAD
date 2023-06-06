@@ -1,21 +1,15 @@
 import jax
 from jax import jit, grad, lax, vmap, random
 import jax.numpy as jnp
-import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
-from matplotlib import cm
-from matplotlib.cm import ScalarMappable
 from pycbc.catalog import Merger
 from pycbc.psd import interpolate, inverse_spectrum_truncation
 from pycbc.filter import resample_to_delta_t, highpass
-from pycbc.waveform import get_td_waveform
-from pycbc.filter import matched_filter
-import pylab
-from pycbc.filter import sigma
 from ripple.waveforms import IMRPhenomD
 from ripple import ms_to_Mc_eta
 import math
 import time
+
+import plots
 
 # Constants
 SAMPLING_RATE = 2048
@@ -270,263 +264,92 @@ def psd_func(conditioned):
 
 @jit
 def one_step(state, _):
+    """
+    Simulates one step of simulated annealing. Calculates the gradient of the snr with respect to the masses,
+    updates the masses using the learning rate and the gradients, then applies a random perturbation to the masses.
+
+    Args:
+    state (tuple): Current state of the system, includes the mass values, RNG key, temperature, annealing rate, and other parameters.
+
+    Returns:
+    tuple: The updated state of the system and the snr and mass values.
+    """
+    # Unpack the state variables
     current_i, mass1, mass2, rng_key, temperature, annealing_rate, data, psd, freqs, params, delta_f = state
+
+    # Function to get SNR
     snr_func = make_function(data, psd, freqs, params, delta_f)
+
+    # Define gradients of SNR function with respect to each mass
     dsnr1 = jit(grad(lambda m1, m2: snr_func(m1, m2), argnums=0))
     dsnr2 = jit(grad(lambda m1, m2: snr_func(m1, m2), argnums=1))
 
+    # Get SNR using current state
     snr = jax.lax.convert_element_type(snr_func(mass1, mass2), jnp.float32)
+
+    # Get gradient of SNR 
     gradient1 = jax.lax.convert_element_type(dsnr1(mass1, mass2), jnp.float32)
     gradient2 = jax.lax.convert_element_type(dsnr2(mass1, mass2), jnp.float32)
 
-    rng_key, subkey1 = random.split(rng_key)
-    rng_key, subkey2 = random.split(rng_key)
+    # Randomise the learning rate
+    learning_rate1 = random.uniform(rng_key, minval=LRL, maxval=LRU)
+    learning_rate2 = random.uniform(rng_key, minval=LRL, maxval=LRU)
 
-    learning_rate1 = random.uniform(subkey1, minval=LRL, maxval=LRU)
-    learning_rate2 = random.uniform(subkey2, minval=LRL, maxval=LRU)
+    # Generate perturbations scaled by the temperature (simulated annealing)
+    perturbation1 = random.normal(rng_key) * temperature
+    perturbation2 = random.normal(rng_key) * temperature
 
-    perturbation1 = random.normal(subkey1) * temperature
-    perturbation2 = random.normal(subkey2) * temperature
-
+    # Update masses
     new_mass1 = mass1 + (learning_rate1 * gradient1) + perturbation1
+
+    # Avoid mass1 falling below 11 solar masses and above 120 solar masses
     new_mass1 = jax.lax.cond(new_mass1 < 11., lambda _: 11. + jnp.abs(perturbation1), lambda _: new_mass1, None)
     new_mass1 = jax.lax.cond(new_mass1 > 120., lambda _: 120. - jnp.abs(perturbation1), lambda _: new_mass1, None)
     new_mass1 = jax.lax.cond(jnp.isnan(new_mass1), lambda _: jnp.nan, lambda _: new_mass1, None)
 
+    # Avoid mass2 falling below 11 solar masses and above 120 solar masses
     new_mass2 = mass2 + (learning_rate2 * gradient2) + perturbation2
     new_mass2 = jax.lax.cond(new_mass2 < 11., lambda _: 11. + jnp.abs(perturbation2), lambda _: new_mass2, None)
     new_mass2 = jax.lax.cond(new_mass2 > 120., lambda _: 120. - jnp.abs(perturbation2), lambda _: new_mass2, None)
     new_mass2 = jax.lax.cond(jnp.isnan(new_mass2), lambda _: jnp.nan, lambda _: new_mass2, None)
-
+    
+    # Update the temperature for the annealing
     temperature *= annealing_rate
+
+    # Create a new state
     new_state = (current_i+1, new_mass1, new_mass2, rng_key, temperature, annealing_rate, data, psd, freqs, params, delta_f)
+
     return new_state, (snr, mass1, mass2)
 
 def get_optimal_mass(init_mass1, init_mass2, freqs, params, data, psd, delta_f):
+    """
+    Function to find the optimal mass values. It initializes the system state, and then runs the 
+    one_step function for a set number of iterations.
+
+    Args:
+    init_mass1 (float): Initial value for mass1
+    init_mass2 (float): Initial value for mass2
+    freqs (jax.numpy.array): Frequency array from 0 to nyquist frequency with step size of delta_f
+    params (list): List of parameters for waveform
+    data (jax.numpy.array): Data frequency series array
+    psd (jax.numpy.array): Power spectral density frequecy series array
+    delta_f (float): Frequency step size
+
+    Returns:
+    tuple: History of SNR, mass1, and mass2 values.
+    """
+    # Generate rng key
     rng_key = random.PRNGKey(SEED)
-    temperature = TEMPERATURE
-    annealing_rate = ANNEALING_RATE
-    state = (0, init_mass1, init_mass2, rng_key, temperature, annealing_rate, data, psd, freqs, params, delta_f)
+    
+    # Define the initial state of the system
+    state = (0, init_mass1, init_mass2, rng_key, TEMPERATURE, ANNEALING_RATE, data, psd, freqs, params, delta_f)
 
+    # Use lax.scan to apply the one_step function across a range of size MAX_ITERS, effectively performing
+    # the optimisation process for MAX_ITERS steps. This returns the final state of the system, as well
+    # as histories of the SNR and mass values.   
     final_state, (snr_hist, mass1_hist, mass2_hist) = lax.scan(one_step, state, jnp.arange(MAX_ITERS))
+     
     return snr_hist, mass1_hist, mass2_hist
-
-def plot_snr_mass(results, total_time, EVENT_NAME, STRAIN, freqs, params, fdata_jax, psd_jax, delta_f):
-    
-    mass1_values, mass2_values, snr_values, iter_values, combined_mass = sort_results(results)
-    max_snr = get_max_snr_array(results, EVENT_NAME, STRAIN, total_time)
-
-    # SNR vs Mass plot
-    plt.figure(figsize=(18, 12))
-    n = len(mass1_values)
-    color_name = cm.jet
-    colors = color_name(jnp.linspace(-1, 1, n))
-    norm = plt.Normalize(-1, n-1)
-    mappable = ScalarMappable(norm=norm, cmap=color_name)
-    last_key = list(results.keys())[-1]
-    iters = list(range(MAX_ITERS))
-
-    peak_combined_mass = max_snr['mass1'] + max_snr['mass2']
-
-    initial_marker = plt.scatter(combined_mass[0], snr_values[0], marker='x', color=colors[0], s=400, linewidth=3, label=f"Initial: mass1: {mass1_values[0]:.2f}, mass2: {mass2_values[0]:.2f}, SNR: {snr_values[0]:.2f}, iter: {iter_values[0]}")
-    peak_marker = plt.scatter(peak_combined_mass, max_snr["snr"], marker='x', color=colors[(max_snr['iter'])], s=400, linewidth=3, label=f"Peak: mass1: {max_snr['mass1']:.2f}, mass2: {max_snr['mass2']:.2f}, SNR: {max_snr['snr']:.2f}, iter: {max_snr['iter']}")
-    final_marker = plt.scatter(combined_mass[-1], snr_values[-1], marker='x', color=colors[-1], s=400, linewidth=3, label=f"Final: mass1: {mass1_values[-1]:.2f}, mass2: {mass2_values[-1]:.2f}, SNR: {snr_values[-1]:.2f}, iter: {iter_values[-1]}")
-
-    for i in range(n - 1):
-        plt.plot(combined_mass[i:i+2], snr_values[i:i+2], "o", color=colors[i], alpha=0.15, markersize=5)
-
-    plt.legend(fontsize=21)
-
-    plt.xlabel(f"Mass (solar mass)", fontsize=24)
-    plt.ylabel("SNR", fontsize=24)
-    plt.title(f"SNR vs Mass {EVENT_NAME}({STRAIN}) (Time taken: {total_time:.2f} seconds), iterations: {MAX_ITERS}", fontsize=24)
-    plt.tick_params(axis='both', which='major', labelsize=24)
-    plt.grid(True)
-
-    # Create the colorbar
-    cbar = plt.colorbar(mappable, ax=plt.gca())
-    cbar.set_label('SNR Index', fontsize=24)
-    plt.tight_layout()
-    cbar.ax.tick_params(labelsize=24)  # Change font size of colorbar numbers
-
-    # Save the plot with a filename consisting of the graph title, event name, temperature, annealing_rate, and MAX_ITERS
-    filename = f"SNR_vs_Combined_Mass_for_{EVENT_NAME}_{STRAIN}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.png"
-    plt.savefig(filename, dpi=300, bbox_inches='tight')
-    plt.close()
-
-    # SNR vs Iteration plot
-    colormap = cm.jet
-    norm = plt.Normalize(vmin=min(combined_mass), vmax=max(combined_mass))
-
-    plt.figure(figsize=(18, 12))
-    plt.scatter(iter_values, snr_values, c=combined_mass, cmap=colormap, norm=norm)
-
-    mappable = ScalarMappable(norm=norm, cmap=colormap)
-    cbar = plt.colorbar(mappable, ax=plt.gca())
-    cbar.set_label('Mass Index', fontsize=24)
-    cbar.ax.tick_params(labelsize=24)  # Change font size of colorbar numbers
-
-    plt.tick_params(axis='both', which='major', labelsize=24)
-
-    plt.tight_layout(pad=5.0)  # Add padding for title
-    plt.grid(True)
-
-    plt.xlabel("Iteration", fontsize=24)
-    plt.ylabel("SNR", fontsize=24)
-    plt.title(f"SNR vs Iteration {EVENT_NAME}({STRAIN}) (Time taken: {total_time:.2f} seconds), iterations: {MAX_ITERS}", fontsize=24)
-    filename = f"SNR_vs_Iterations_for_{EVENT_NAME}_{STRAIN}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.png"
-    plt.savefig(filename, dpi=300, bbox_inches='tight')
-    plt.close()
-
-    # SNR time-series plot
-    mass1 = max_snr['mass1']
-    mass2 = max_snr['mass2']
-    snrp = max_snr['snr']
-    template = gen_waveform(mass1, mass2, freqs, params)
-    snr = pre_matched_filter(template, fdata_jax, psd_jax, delta_f)
-    plt.plot(snr)
-    plt.grid()
-    plt.tick_params(axis='both', which='major', labelsize=18)
-    plt.tight_layout()
-    plt.xlabel("SNR Index", fontsize=18)
-    plt.ylabel("SNR", fontsize=24)
-    plt.title(f"Optimal Template {EVENT_NAME}({STRAIN}) SNR:{snrp:.2f}", fontsize=18)
-    filename = f"Optimal_Template_for_{EVENT_NAME}_{STRAIN}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.png"
-    plt.savefig(filename, dpi=300, bbox_inches='tight')
-    plt.close()
-
-
-def pycbc_plots(EVENT_NAME, STRAIN, conditioned, results, total_time):
-    
-    # From the PyCBC tutorial 3: https://colab.research.google.com/github/gwastro/pycbc-tutorials/blob/master/tutorial/3_WaveformMatchedFilter.ipynb
-    mass1_values, mass2_values, snr_values, iter_values, combined_mass = sort_results(results)
-    max_snr = get_max_snr_array(results, EVENT_NAME, STRAIN, total_time)
-    merger = Merger(EVENT_NAME)
-
-    # GravAD calculated Masses
-    mass1 = max_snr['mass1']
-    mass2 = max_snr['mass2']
-
-    hp, hc = get_td_waveform(approximant="SEOBNRv4_opt",
-                            mass1=mass1,
-                            mass2=mass2,
-                            delta_t=1.0/2048,
-                            f_lower=15)
-
-    hp.resize(len(conditioned))
-
-    psd = conditioned.psd(4)
-    psd = interpolate(psd, conditioned.delta_f)
-    psd = inverse_spectrum_truncation(psd, int(4 * conditioned.sample_rate),
-                                  low_frequency_cutoff=15)
-    template = hp.cyclic_time_shift(hp.start_time)
-    snr = matched_filter(template, conditioned,
-                     psd=psd, low_frequency_cutoff=20)
-    snr = snr.crop(4 + 4, 4)
-
-    fig, axs = plt.subplots(2, 1, figsize=[15, 7], sharex=True)  # Share the x-axis
-
-    peak = abs(snr).numpy().argmax()
-    snrp = snr[peak]
-    time = snr.sample_times[peak]
-
-    dt = time - conditioned.start_time
-    aligned = template.cyclic_time_shift(dt)
-
-    # scale the template so that it would have SNR 1 in this data
-    aligned /= sigma(aligned, psd=psd, low_frequency_cutoff=20.0)
-
-    # Scale the template amplitude and phase to the peak value
-    aligned = (aligned.to_frequencyseries() * snrp).to_timeseries()
-    aligned.start_time = conditioned.start_time
-
-    # We do it this way so that we can whiten both the template and the data
-    white_data = (conditioned.to_frequencyseries() / psd**0.5).to_timeseries()
-
-    # apply a smoothing of the turnon of the template to avoid a transient
-    # from the sharp turn on in the waveform.
-    tapered = aligned.highpass_fir(30, 512, remove_corrupted=False)
-    white_template = (tapered.to_frequencyseries() / psd**0.5).to_timeseries()
-
-    white_data = white_data.highpass_fir(30., 512).lowpass_fir(300, 512)
-    white_template = white_template.highpass_fir(30, 512).lowpass_fir(300, 512)
-
-    # Select the time around the merger
-    start_time = merger.time - 0.2
-    end_time = merger.time + 0.1
-
-    # Index the SNR plot and template plot to the selected time range
-    snr_index = (snr.sample_times >= start_time) & (snr.sample_times <= end_time)
-    template_index = (white_template.sample_times >= start_time) & (white_template.sample_times <= end_time)
-
-    # First plot
-    axs[0].plot(snr.sample_times[snr_index], abs(snr)[snr_index])
-    axs[0].set_ylabel('Signal-to-noise', fontsize=18)
-    axs[0].set_title(f"SNR Time-series for Peak Template, {EVENT_NAME}({STRAIN})", fontsize=21)
-    axs[0].tick_params(axis='both', which='major', labelsize=14)
-
-    # Second plot
-    axs[1].plot(white_template.sample_times[template_index], white_data[template_index], label="Data")
-    axs[1].plot(white_template.sample_times[template_index], white_template[template_index], label="Template")
-    axs[1].set_xlabel('Time (s)', fontsize=18)
-    axs[1].set_ylabel('Strain', fontsize=18)
-    axs[1].set_title(f"Template against GW signal, {EVENT_NAME}({STRAIN})", fontsize=21)
-    axs[1].legend()
-
-    filename = f"snr_and_aligned_{EVENT_NAME}_{STRAIN}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.png"
-    plt.savefig(filename, dpi=300, bbox_inches='tight')
-    plt.close()
-
-    subtracted = conditioned - aligned
-
-    # Plot the original data and the subtracted signal data
-    fig, axs = plt.subplots(2, 1, figsize=[15, 8], sharex=True)  # Here we make x-axes shared
-
-    # Data for the two plots
-    data_list = [(conditioned, 'Original_{}_Data_({})'.format(STRAIN, EVENT_NAME)),
-                 (subtracted, 'Signal_Subtracted_from_{}_Data_({})'.format(STRAIN, EVENT_NAME))]
-
-    # Loop over the data and create the subplots
-    for i, (data, title) in enumerate(data_list):
-        t, f, p = data.whiten(4, 4).qtransform(.001,
-                                               logfsteps=100,
-                                               qrange=(8, 8),
-                                               frange=(20, 512))
-
-        # Specify the plot to be modified
-        ax = axs[i]
-        ax.set_title(title, fontsize=21)
-        img = ax.pcolormesh(t, f, p**0.5, vmin=1, vmax=6)
-        ax.tick_params(axis='both', which='major', labelsize=14)
-        ax.set_yscale('log')
-        ax.set_ylabel('Frequency (Hz)', fontsize=18)
-        ax.set_xlim(merger.time - 2, merger.time + 1)
-
-    # Label x-axis at the end (as x-axis is shared)
-    axs[1].set_xlabel('Time (s)', fontsize=18)
-
-    # Adjusting the spaces between the plots
-    plt.subplots_adjust(hspace=0.5)
-
-    filename = "contours_{}_{}_T_{:.2f}_AR_{:.3f}_MI_{}_{}_SEED{}.png".format(EVENT_NAME, STRAIN, TEMPERATURE, ANNEALING_RATE, MAX_ITERS, LRL, LRU, SEED)
-    plt.savefig(filename, dpi=300, bbox_inches='tight')
-    plt.close()
-
-def sort_results(results):
-    mass1_values = []
-    mass2_values = []
-    snr_values = []
-    combined_mass = []
-
-    for result in results.values():
-        mass1_values.append(jnp.array(result['mass1s'], dtype=jnp.float32).item())
-        mass2_values.append(jnp.array(result['mass2s'], dtype=jnp.float32).item())
-        combined_mass.append(jnp.array(result['mass1s'] + result['mass2s'], dtype=jnp.float32))
-        snr_values.append(jnp.array(result['snr'], dtype=jnp.float32).item())
-
-    iter_values = list(range(MAX_ITERS))
-
-    return mass1_values, mass2_values, snr_values, iter_values, combined_mass
 
 def preprocess(event, strain):
 
@@ -553,7 +376,7 @@ def preprocess(event, strain):
         print(f"Error processing event {event} and strain {strain}: {str(e)}")
         return None, None, None
 
-def precompile():
+def compile():
 
     print("Beginning Compilation...")
     fdata_jax, delta_f, psd_jax, _ = preprocess("GW150914", "H1")
@@ -595,7 +418,7 @@ def get_max_snr_array(results, EVENT_NAME, STRAIN, total_time):
 def main():
 
     # compile the code --> allows for accurate timings
-    precompile()
+    compile()
 
     # Test every GW event with each detector
     all_results = []
@@ -640,11 +463,15 @@ def main():
             for i in range(MAX_ITERS):
                 results[i] = {'snr': snr[i], 'mass1s': mass1[i], 'mass2s': mass2[i], 'iters': iterations[i]}
             
+            max_snr = get_max_snr_array(results, event, strain, total_time)
+
             # tracing type plots aswell as SNR time-series
-            plot_snr_mass(results, total_time, event, strain, freqs, params, fdata_jax, psd_jax, delta_f)
-            
+            plots.plot_snr_vs_mass(event, strain, total_time, results, max_snr)
+            plots.plot_snr_vs_iteration(event, strain, total_time, results )
+            plots.plot_snr_timeseries(event, strain, max_snr, freqs, params, fdata_jax, psd_jax, delta_f)
+
             # contour, alignment and SNR time-series plots
-            pycbc_plots(event, strain, conditioned, results, total_time)
+            plots.pycbc_plots(event, strain, conditioned, total_time, max_snr)
 
             all_results.append(get_max_snr_array(results, event, strain, total_time))
 
