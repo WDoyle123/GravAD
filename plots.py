@@ -27,7 +27,7 @@ def create_colorbar(ax, mappable, label, fontsize=24):
     return cbar
 
 def save_plot(filename):
-    plt.savefig(filename, dpi=300, bbox_inches='tight')
+    plt.savefig("test_graphs/" + filename, dpi=300, bbox_inches='tight')
     plt.close()
 
 def plot_markers(ax, combined_mass, snr_values, mass1_values, mass2_values, iter_values, colors, max_snr):
@@ -45,19 +45,18 @@ def plot_snr_vs_mass(event_name, strain, total_time, results, max_snr):
     mass1_values, mass2_values, snr_values, iter_values, combined_mass = sort_results(results)
     fig, ax = plt.subplots(figsize=(18, 12))
     n = len(mass1_values)
-    color_name = cm.jet
+    color_name = cm.viridis
     colors = color_name(jnp.linspace(-1, 1, n))
     norm = plt.Normalize(-1, n-1)
     mappable = ScalarMappable(norm=norm, cmap=color_name)
     last_key = list(results.keys())[-1]
-    iters = list(range(MAX_ITERS))
     
     plot_markers(ax, combined_mass, snr_values, mass1_values, mass2_values, iter_values, colors, max_snr)
 
     for i in range(n - 1):
-        plt.plot(combined_mass[i:i+2], snr_values[i:i+2], "o", color=colors[i], alpha=0.15, markersize=5)
+        plt.plot(combined_mass[i:i+2], snr_values[i:i+2], "o-", color=colors[i], alpha=0.15, markersize=5)
 
-    format_plot(ax, 'Mass (solar mass)', 'SNR', f'SNR vs Mass {event_name}({strain}) (Time taken: {total_time:.2f} seconds), iterations: {MAX_ITERS}')
+    format_plot(ax, 'Mass (solar mass)', 'SNR', f'SNR vs Mass {event_name}({strain}) (Time taken: {total_time:.2f} seconds), iterations: {max(iter_values)}')
     create_colorbar(ax, mappable, 'SNR Index')
     fig.tight_layout()
     save_plot(f'SNR_vs_Combined_Mass_for_{event_name}_{strain}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.png')
@@ -66,10 +65,10 @@ def plot_snr_vs_iteration(event_name, strain, total_time, results):
     mass1_values, mass2_values, snr_values, iter_values, combined_mass = sort_results(results)
     fig, ax = plt.subplots(figsize=(18, 12))
     norm = plt.Normalize(vmin=min(combined_mass), vmax=max(combined_mass))
-    ax.scatter(iter_values, snr_values, c=combined_mass, cmap=cm.jet, norm=norm)
-    format_plot(ax, 'Iteration', 'SNR', f'SNR vs Iteration {event_name}({strain}) (Time taken: {total_time:.2f} seconds), iterations: {MAX_ITERS}')
-    mappable = ScalarMappable(norm=norm, cmap=cm.jet)
-    create_colorbar(ax, mappable, 'Mass Index')
+    ax.scatter(iter_values, snr_values, c=combined_mass, cmap=cm.viridis, norm=norm)
+    format_plot(ax, 'Iteration', 'SNR', f'SNR vs Iteration {event_name}({strain}) (Time taken: {total_time:.2f} seconds), iterations: {max(iter_values)}')
+    mappable = ScalarMappable(norm=norm, cmap=cm.viridis)
+    create_colorbar(ax, mappable, 'Combined Mass (Solar Masses)')
     fig.tight_layout(pad=5.0)
     save_plot(f'SNR_vs_Iterations_for_{event_name}_{strain}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.png')
 
@@ -92,14 +91,14 @@ def sort_results(results):
     mass2_values = []
     snr_values = []
     combined_mass = []
+    iter_values = []
 
     for result in results.values():
         mass1_values.append(jnp.array(result['mass1s'], dtype=jnp.float32).item())
         mass2_values.append(jnp.array(result['mass2s'], dtype=jnp.float32).item())
         combined_mass.append(jnp.array(result['mass1s'] + result['mass2s'], dtype=jnp.float32))
         snr_values.append(jnp.array(result['snr'], dtype=jnp.float32).item())
-
-    iter_values = list(range(MAX_ITERS))
+        iter_values.append(jnp.array(result['iters'], dtype=jnp.float32).item())
 
     return mass1_values, mass2_values, snr_values, iter_values, combined_mass
 
@@ -179,8 +178,7 @@ def pycbc_plots(EVENT_NAME, STRAIN, conditioned, total_time, max_snr):
     axs[1].legend()
 
     filename = f"snr_and_aligned_{EVENT_NAME}_{STRAIN}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.png"
-    plt.savefig(filename, dpi=300, bbox_inches='tight')
-    plt.close()
+    save_plot(filename)
 
     subtracted = conditioned - aligned
 
@@ -214,6 +212,4 @@ def pycbc_plots(EVENT_NAME, STRAIN, conditioned, total_time, max_snr):
     plt.subplots_adjust(hspace=0.5)
 
     filename = "contours_{}_{}_T_{:.2f}_AR_{:.3f}_MI_{}_{}_SEED{}.png".format(EVENT_NAME, STRAIN, TEMPERATURE, ANNEALING_RATE, MAX_ITERS, LRL, LRU, SEED)
-    plt.savefig(filename, dpi=300, bbox_inches='tight')
-    plt.close()
-
+    save_plot(filename)

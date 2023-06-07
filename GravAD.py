@@ -16,7 +16,7 @@ SAMPLING_RATE = 2048
 LOW_FREQ_CUTOFF = 20.
 HIGH_FREQ_CUTOFF = 1000.
 MAX_ITERS = 500
-TEMPERATURE = 1
+TEMPERATURE = 5
 ANNEALING_RATE = 0.99
 LRU = 1.5 # Learning Rate Upper
 LRL = 5.5 # Learning Rate Lower
@@ -286,29 +286,35 @@ def one_step(state, _):
 
     # Get SNR using current state
     snr = jax.lax.convert_element_type(snr_func(mass1, mass2), jnp.float32)
-
+    
     # Get gradient of SNR 
     gradient1 = jax.lax.convert_element_type(dsnr1(mass1, mass2), jnp.float32)
     gradient2 = jax.lax.convert_element_type(dsnr2(mass1, mass2), jnp.float32)
 
+    # Get RNG 
+    rng_key, subkey1 = random.split(rng_key)
+    rng_key, subkey2 = random.split(rng_key)
+
     # Randomise the learning rate
-    learning_rate1 = random.uniform(rng_key, minval=LRL, maxval=LRU)
-    learning_rate2 = random.uniform(rng_key, minval=LRL, maxval=LRU)
+    learning_rate1 = random.uniform(subkey1, minval=LRL, maxval=LRU)
+    learning_rate2 = random.uniform(subkey2, minval=LRL, maxval=LRU)
 
     # Generate perturbations scaled by the temperature (simulated annealing)
-    perturbation1 = random.normal(rng_key) * temperature
-    perturbation2 = random.normal(rng_key) * temperature
+    perturbation1 = random.normal(subkey1) * temperature
+    perturbation2 = random.normal(subkey2) * temperature
 
-    # Update masses
+    # Update mass1
     new_mass1 = mass1 + (learning_rate1 * gradient1) + perturbation1
 
     # Avoid mass1 falling below 11 solar masses and above 120 solar masses
     new_mass1 = jax.lax.cond(new_mass1 < 11., lambda _: 11. + jnp.abs(perturbation1), lambda _: new_mass1, None)
     new_mass1 = jax.lax.cond(new_mass1 > 120., lambda _: 120. - jnp.abs(perturbation1), lambda _: new_mass1, None)
     new_mass1 = jax.lax.cond(jnp.isnan(new_mass1), lambda _: jnp.nan, lambda _: new_mass1, None)
+    
+    # Update mass2
+    new_mass2 = mass2 + (learning_rate2 * gradient2) + perturbation2
 
     # Avoid mass2 falling below 11 solar masses and above 120 solar masses
-    new_mass2 = mass2 + (learning_rate2 * gradient2) + perturbation2
     new_mass2 = jax.lax.cond(new_mass2 < 11., lambda _: 11. + jnp.abs(perturbation2), lambda _: new_mass2, None)
     new_mass2 = jax.lax.cond(new_mass2 > 120., lambda _: 120. - jnp.abs(perturbation2), lambda _: new_mass2, None)
     new_mass2 = jax.lax.cond(jnp.isnan(new_mass2), lambda _: jnp.nan, lambda _: new_mass2, None)
@@ -342,12 +348,28 @@ def get_optimal_mass(init_mass1, init_mass2, freqs, params, data, psd, delta_f):
     rng_key = random.PRNGKey(SEED)
     
     # Define the initial state of the system
-    state = (0, init_mass1, init_mass2, rng_key, TEMPERATURE, ANNEALING_RATE, data, psd, freqs, params, delta_f)
+    temperature = TEMPERATURE
+    state = (0, init_mass1, init_mass2, rng_key, temperature, ANNEALING_RATE, data, psd, freqs, params, delta_f)
+    
+    snr_hist = []
+    mass1_hist = []
+    mass2_hist = []
+    peak_snr = 0.0
+    peak_iter = 0
 
-    # Use lax.scan to apply the one_step function across a range of size MAX_ITERS, effectively performing
-    # the optimisation process for MAX_ITERS steps. This returns the final state of the system, as well
-    # as histories of the SNR and mass values.   
-    final_state, (snr_hist, mass1_hist, mass2_hist) = lax.scan(one_step, state, jnp.arange(MAX_ITERS))
+    for i in range(MAX_ITERS):
+        state, (snr, mass1, mass2) = one_step(state, i)
+        snr_hist.append(snr)
+        mass1_hist.append(mass1)
+        mass2_hist.append(mass2)
+
+        if snr > peak_snr:
+            peak_snr = snr
+            peak_iter = i
+        if i - peak_iter > 25:
+            state = state[:4] + (temperature,) + state[5:]  # Create a new tuple with the updated temperature
+        if i - peak_iter > 50:
+            break
      
     return snr_hist, mass1_hist, mass2_hist
 
@@ -400,17 +422,19 @@ def frequency_series(delta_f):
     return jnp.arange(0, nyquist_freq + delta_f, delta_f)
 
 def get_max_snr_array(results, EVENT_NAME, STRAIN, total_time):
-    max_snr = max(results.values(), key=lambda x: x['snr'])
-    max_snr['iter'] = jnp.asarray(max_snr['iters']).item()
-    max_snr['mass1'] = jnp.asarray(max_snr['mass1s']).item()
-    max_snr['mass2'] = jnp.asarray(max_snr['mass2s']).item()
-    max_snr['final_mass'] = (max_snr['mass1'] + max_snr['mass2'])
+    max_snr = {}
+    all_max_snr = max(results.values(), key=lambda x: x['snr'])
+    max_snr['snr'] = jnp.asarray(all_max_snr['snr']).item()
+    max_snr['iter'] = jnp.asarray(all_max_snr['iters']).item()
+    max_snr['mass1'] = jnp.asarray(all_max_snr['mass1s']).item()
+    max_snr['mass2'] = jnp.asarray(all_max_snr['mass2s']).item()
+    max_snr['final_mass'] = (all_max_snr['mass1s'] + all_max_snr['mass2s'])
     max_snr['event_name'] = EVENT_NAME
     max_snr['strain'] = STRAIN
     max_snr['time'] = total_time
 
     filename = f"results_for_{EVENT_NAME}_{STRAIN}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.txt"
-    with open(f"{filename}", "w") as f:
+    with open(f"test_graphs/{filename}", "w") as f:
         f.write(str(max_snr))
 
     return max_snr
@@ -424,6 +448,7 @@ def main():
     all_results = []
 
     for event in EVENTS:
+        combined_snr = []
         for strain in STRAINS:
 
             print(f"Analysing Event: {event}, Strain: {strain}")
@@ -456,15 +481,18 @@ def main():
             snr = jnp.array(snr)
             mass1 = jnp.array(mass1)
             mass2 = jnp.array(mass2)
-
+            iterations = jnp.array([i for i in range(len(snr))])
             results = {}
-            iterations = list(range(MAX_ITERS+1))
 
-            for i in range(MAX_ITERS):
-                results[i] = {'snr': snr[i], 'mass1s': mass1[i], 'mass2s': mass2[i], 'iters': iterations[i]}
+            for i in range(max(iterations)):
+                results[i] = {'snr': snr[i], 'mass1s': mass1[i], 'mass2s': mass2[i], "combined_mass": (mass1[i] + mass2[i]), 'iters': int(iterations[i])}
             
             max_snr = get_max_snr_array(results, event, strain, total_time)
+            combined_snr.append(max_snr['snr'])
 
+            print(f"Time Taken: {total_time:.2f}, Templates:{iterations[-1]}")
+            print(f"Plotting Results...")
+            
             # tracing type plots aswell as SNR time-series
             plots.plot_snr_vs_mass(event, strain, total_time, results, max_snr)
             plots.plot_snr_vs_iteration(event, strain, total_time, results )
@@ -475,8 +503,11 @@ def main():
 
             all_results.append(get_max_snr_array(results, event, strain, total_time))
 
+        snr_for_event = jnp.sqrt(combined_snr[0]**2 + combined_snr[1]**2)
+        print(f"SNR for {event}: {snr_for_event:.2f}\n")
+
         filename = f"all_results_for_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.txt"
-        with open(f"{filename}", "w") as f:
+        with open(f"test_graphs/{filename}", "w") as f:
              f.write(str(all_results))
 
 if __name__ == "__main__":
