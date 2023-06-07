@@ -1,0 +1,1 @@
+{'event_name': 'GW170104', 'strain': 'H1', 'snr': 8.791008949279785, 'mass1': 30.69458469883617, 'mass2': 27.324808095240762, 'final_mass': DeviceArray(58.01939279, dtype=float64), 'iter': 19, 'total_iters': 44, 'time': 1.3769197463989258}

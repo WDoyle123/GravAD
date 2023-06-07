@@ -1,0 +1,1 @@
+{'event_name': 'GW170823', 'strain': 'L1', 'snr': 9.694851875305176, 'mass1': 39.13958702911241, 'mass2': 42.88907604383926, 'final_mass': DeviceArray(82.02866307, dtype=float64), 'iter': 21, 'total_iters': 46, 'time': 1.445333480834961}

@@ -1,1 +1,0 @@
-{'snr': 10.308589935302734, 'iter': 61, 'mass1': 39.61596918896622, 'mass2': 32.691208929851356, 'final_mass': DeviceArray(72.30717812, dtype=float64), 'event_name': 'GW170818', 'strain': 'L1', 'time': 3.4471044540405273}
