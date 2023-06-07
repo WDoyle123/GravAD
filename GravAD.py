@@ -10,13 +10,15 @@ import math
 import time
 
 import plots
+from to_csv import process_files
 
 # Constants
 SAMPLING_RATE = 2048
 LOW_FREQ_CUTOFF = 20.
 HIGH_FREQ_CUTOFF = 1000.
 MAX_ITERS = 500
-TEMPERATURE = 5
+TEMPERATURE = 1 # Initial Temperature
+ADV_TEMPERATURE = 2 # Advanced Temperature
 ANNEALING_RATE = 0.99
 LRU = 1.5 # Learning Rate Upper
 LRL = 5.5 # Learning Rate Lower
@@ -366,9 +368,9 @@ def get_optimal_mass(init_mass1, init_mass2, freqs, params, data, psd, delta_f):
         if snr > peak_snr:
             peak_snr = snr
             peak_iter = i
+        if i - peak_iter > 10:
+            state = state[:4] + (ADV_TEMPERATURE,) + state[5:]  # Create a new tuple with the updated temperature
         if i - peak_iter > 25:
-            state = state[:4] + (temperature,) + state[5:]  # Create a new tuple with the updated temperature
-        if i - peak_iter > 50:
             break
      
     return snr_hist, mass1_hist, mass2_hist
@@ -424,13 +426,23 @@ def frequency_series(delta_f):
 def get_max_snr_array(results, EVENT_NAME, STRAIN, total_time):
     max_snr = {}
     all_max_snr = max(results.values(), key=lambda x: x['snr'])
+    max_snr['event_name'] = EVENT_NAME
+    max_snr['strain'] = STRAIN
     max_snr['snr'] = jnp.asarray(all_max_snr['snr']).item()
-    max_snr['iter'] = jnp.asarray(all_max_snr['iters']).item()
     max_snr['mass1'] = jnp.asarray(all_max_snr['mass1s']).item()
     max_snr['mass2'] = jnp.asarray(all_max_snr['mass2s']).item()
     max_snr['final_mass'] = (all_max_snr['mass1s'] + all_max_snr['mass2s'])
-    max_snr['event_name'] = EVENT_NAME
-    max_snr['strain'] = STRAIN
+    max_snr['iter'] = jnp.asarray(all_max_snr['iters']).item()
+
+    # Get all keys, sort them, and get the largest one (last)
+    final_key = sorted(list(results.keys()))[-1]
+
+    # Get the final dictionary
+    final_iter = results[final_key] 
+
+    # Get 'iters' value from the final entry
+    max_snr['total_iters'] = final_iter['iters']
+
     max_snr['time'] = total_time
 
     filename = f"results_for_{EVENT_NAME}_{STRAIN}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.txt"
@@ -509,6 +521,8 @@ def main():
         filename = f"all_results_for_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.txt"
         with open(f"test_graphs/{filename}", "w") as f:
              f.write(str(all_results))
+
+    process_files()
 
 if __name__ == "__main__":
     main()
