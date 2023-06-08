@@ -1,1 +1,0 @@
-{'event_name': 'GW151226', 'strain': 'L1', 'snr': 5.823947906494141, 'mass1': 26.948108911807427, 'mass2': 27.688544479748725, 'final_mass': DeviceArray(54.63665339, dtype=float64), 'iter': 32, 'total_iters': 57, 'time': 1.775691032409668}

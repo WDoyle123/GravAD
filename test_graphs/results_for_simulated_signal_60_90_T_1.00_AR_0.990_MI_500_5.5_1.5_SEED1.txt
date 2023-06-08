@@ -1,0 +1,1 @@
+{'event_name': 'simulated_signal', 'strain': '60_90', 'snr': 2.785905361175537, 'mass1': 24.196648224492325, 'mass2': 24.24818539336909, 'final_mass': 48.44483361786142, 'iter': 4, 'total_iters': 29, 'time': 1.0376036167144775}

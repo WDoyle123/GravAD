@@ -10,8 +10,7 @@ from pycbc.filter import resample_to_delta_t, highpass
 from pycbc.filter import sigma
 import pylab
 
-from GravAD import MAX_ITERS, SEED, TEMPERATURE, ANNEALING_RATE, LRL, LRU
-from GravAD import gen_waveform, pre_matched_filter
+from gravad import MAX_ITERS, SEED, TEMPERATURE, ANNEALING_RATE, LRL, LRU
 
 def format_plot(ax, xlabel, ylabel, title, fontsize=24):
     ax.tick_params(axis='both', which='major', labelsize=fontsize)
@@ -41,8 +40,12 @@ def plot_markers(ax, combined_mass, snr_values, mass1_values, mass2_values, iter
     ax.legend(fontsize=21)
 
 
-def plot_snr_vs_mass(event_name, strain, total_time, results, max_snr):
+def plot_snr_vs_mass(results, max_snr):
     mass1_values, mass2_values, snr_values, iter_values, combined_mass = sort_results(results)
+    total_time = max_snr['time']
+    event_name = max_snr['event_name']
+    strain = max_snr['strain']
+
     fig, ax = plt.subplots(figsize=(18, 12))
     n = len(mass1_values)
     color_name = cm.viridis
@@ -61,8 +64,12 @@ def plot_snr_vs_mass(event_name, strain, total_time, results, max_snr):
     fig.tight_layout()
     save_plot(f'SNR_vs_Combined_Mass_for_{event_name}_{strain}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.png')
 
-def plot_snr_vs_iteration(event_name, strain, total_time, results):
+def plot_snr_vs_iteration(results, max_snr):
     mass1_values, mass2_values, snr_values, iter_values, combined_mass = sort_results(results)
+    event_name = max_snr['event_name']
+    strain = max_snr['strain']
+    total_time = max_snr['time']
+
     fig, ax = plt.subplots(figsize=(18, 12))
     norm = plt.Normalize(vmin=min(combined_mass), vmax=max(combined_mass))
     ax.scatter(iter_values, snr_values, c=combined_mass, cmap=cm.viridis, norm=norm)
@@ -73,6 +80,7 @@ def plot_snr_vs_iteration(event_name, strain, total_time, results):
     save_plot(f'SNR_vs_Iterations_for_{event_name}_{strain}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.png')
 
 def plot_snr_timeseries(event_name, strain, max_snr, freqs, params, fdata_jax, psd_jax, delta_f):
+    from gravad import gen_waveform, pre_matched_filter
     fig, ax = plt.subplots(figsize=(18, 12))
     mass1 = max_snr['mass1']
     mass2 = max_snr['mass2']
