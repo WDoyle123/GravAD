@@ -1,1 +1,0 @@
-{'event_name': 'GW170729', 'strain': 'H1', 'snr': 5.471341133117676, 'mass1': 26.52247542838139, 'mass2': 26.88321687620964, 'final_mass': DeviceArray(53.4056923, dtype=float64), 'iter': 42, 'total_iters': 67, 'time': 2.1021382808685303}

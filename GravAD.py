@@ -8,7 +8,9 @@ from ripple.waveforms import IMRPhenomD
 from ripple import ms_to_Mc_eta
 import math
 import time
+import pickle
 
+import helper
 import plots
 from to_csv import process_files
 
@@ -27,6 +29,15 @@ STRAINS = ['H1', 'L1']
 EVENTS = [
     "GW150914", "GW151012", "GW151226", "GW170104", "GW170608", "GW170729",
     "GW170809", "GW170814", "GW170817", "GW170818", "GW170823"]
+
+# Define waveform parameters
+chi1 = 0.
+chi2 = 0.
+tc = 1.0
+phic = 1.
+dist_mpc = 440.
+inclination = 0.
+params = [chi1, chi2, dist_mpc, tc, phic, inclination]
 
 # Currently set to min template 
 def gen_init_mass(rng_key):
@@ -400,7 +411,7 @@ def preprocess(event, strain):
         print(f"Error processing event {event} and strain {strain}: {str(e)}")
         return None, None, None
 
-def compile():
+def jit_compile():
 
     print("Beginning Compilation...")
     fdata_jax, delta_f, psd_jax, _ = preprocess("GW150914", "H1")
@@ -445,82 +456,91 @@ def get_max_snr_array(results, EVENT_NAME, STRAIN, total_time):
 
     max_snr['time'] = total_time
 
-    filename = f"results_for_{EVENT_NAME}_{STRAIN}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.txt"
-    with open(f"test_graphs/{filename}", "w") as f:
-        f.write(str(max_snr))
+    filename = f"{EVENT_NAME}_{STRAIN}_max_snr_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.pkl"
+    folder = "test_graphs/max_snr"
+    helper.save_pickle(folder, filename, max_snr)
 
     return max_snr
 
-def main():
+def real_signals():
 
-    # compile the code --> allows for accurate timings
-    compile()
-
-    # Test every GW event with each detector
     all_results = []
 
     for event in EVENTS:
         combined_snr = []
         for strain in STRAINS:
 
-            print(f"Analysing Event: {event}, Strain: {strain}")
-
-            fdata_jax, delta_f, psd_jax, conditioned = preprocess(event, strain)
-
-            # Calculate the inverse PSD
-            inverse_psd_jax = 1 / psd_jax
-
-            freqs = frequency_series(delta_f)
-            time_series = abs(jnp.fft.ifft(freqs))
-
-            # Define waveform parameters
-            chi1 = 0.
-            chi2 = 0.
-            tc = 1.0
-            phic = 1.
-            dist_mpc = 440.
-            inclination = 0.
-            params = [chi1, chi2, dist_mpc, tc, phic, inclination]
-
-            rng_key = random.PRNGKey(SEED)
-            init_mass1, init_mass2, rng_key = gen_init_mass(rng_key)
-
-            make_function(fdata_jax, psd_jax, freqs, params, delta_f)
-            start_time = time.time()
-            snr,  mass1, mass2 = get_optimal_mass(init_mass1, init_mass2, freqs, params, fdata_jax, psd_jax, delta_f)
-            total_time = time.time() - start_time
-
-            snr = jnp.array(snr)
-            mass1 = jnp.array(mass1)
-            mass2 = jnp.array(mass2)
-            iterations = jnp.array([i for i in range(len(snr))])
-            results = {}
-
-            for i in range(max(iterations)):
-                results[i] = {'snr': snr[i], 'mass1s': mass1[i], 'mass2s': mass2[i], "combined_mass": (mass1[i] + mass2[i]), 'iters': int(iterations[i])}
+             print(f"Analysing Event: {event}, Strain: {strain}")
+ 
+             fdata_jax, delta_f, psd_jax, conditioned = preprocess(event, strain)
+ 
+             # Calculate the inverse PSD
+             inverse_psd_jax = 1 / psd_jax
+ 
+             freqs = frequency_series(delta_f)
+ 
+             rng_key = random.PRNGKey(SEED)
+             init_mass1, init_mass2, rng_key = gen_init_mass(rng_key)
+ 
+             make_function(fdata_jax, psd_jax, freqs, params, delta_f)
+             start_time = time.time()
+             snr,  mass1, mass2 = get_optimal_mass(init_mass1, init_mass2, freqs, params, fdata_jax, psd_jax, delta_f)
+             total_time = time.time() - start_time
+ 
+             snr = jnp.array(snr)
+             mass1 = jnp.array(mass1)
+             mass2 = jnp.array(mass2)
+             iterations = jnp.array([i for i in range(len(snr))])
+             results = {}
+ 
+             for i in range(max(iterations)):
+                 results[i] = {'snr': snr[i], 'mass1s': mass1[i], 'mass2s': mass2[i], "combined_mass": (mass1[i] + mass2[i]), 'iters': int(iterations[i])}
+ 
             
-            max_snr = get_max_snr_array(results, event, strain, total_time)
-            combined_snr.append(max_snr['snr'])
-
-            print(f"Time Taken: {total_time:.2f}, Templates:{iterations[-1]}")
-            print(f"Plotting Results...")
-            
-            # tracing type plots aswell as SNR time-series
-            plots.plot_snr_vs_mass(event, strain, total_time, results, max_snr)
-            plots.plot_snr_vs_iteration(event, strain, total_time, results )
-            plots.plot_snr_timeseries(event, strain, max_snr, freqs, params, fdata_jax, psd_jax, delta_f)
-
-            # contour, alignment and SNR time-series plots
-            plots.pycbc_plots(event, strain, conditioned, total_time, max_snr)
-
-            all_results.append(get_max_snr_array(results, event, strain, total_time))
-
+        
+             max_snr = get_max_snr_array(results, event, strain, total_time)
+             combined_snr.append(max_snr['snr'])
+ 
+             print(f"Time Taken: {total_time:.2f}, Templates:{iterations[-1]}")
+             print(f"Plotting Results...")
+ 
+             # tracing type plots aswell as SNR time-series
+             plots.plot_snr_vs_mass(event, strain, total_time, results, max_snr)
+             plots.plot_snr_vs_iteration(event, strain, total_time, results )
+             plots.plot_snr_timeseries(event, strain, max_snr, freqs, params, fdata_jax, psd_jax, delta_f)
+ 
+             # contour, alignment and SNR time-series plots
+             plots.pycbc_plots(event, strain, conditioned, total_time, max_snr)
+ 
+             all_results.append(get_max_snr_array(results, event, strain, total_time))
+ 
         snr_for_event = jnp.sqrt(combined_snr[0]**2 + combined_snr[1]**2)
         print(f"SNR for {event}: {snr_for_event:.2f}\n")
-
+ 
         filename = f"all_results_for_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.txt"
-        with open(f"test_graphs/{filename}", "w") as f:
-             f.write(str(all_results))
+        folder = "test_graphs/all_results"
+        helper.save_txt(folder, filename, all_results)
+
+
+def plotter():
+    
+    # Read pickle files
+    with open(f"test_graphs/{filename}", "rb") as f:
+        results = pickle.load(f)
+
+
+def main():
+    
+    # Clear folders
+    helper.clear_folder("test_graphs")
+
+    # Compile the code --> allows for accurate timings
+    jit_compile()
+
+    # Analyse real signals
+    real_signals()
+    
+
 
     process_files()
 

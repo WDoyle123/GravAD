@@ -9,7 +9,7 @@ from pycbc.psd import interpolate, inverse_spectrum_truncation
 from pycbc.filter import resample_to_delta_t, highpass
 from pycbc.filter import sigma
 import pylab
-
+import os
 from GravAD import MAX_ITERS, SEED, TEMPERATURE, ANNEALING_RATE, LRL, LRU
 from GravAD import gen_waveform, pre_matched_filter
 
@@ -26,8 +26,11 @@ def create_colorbar(ax, mappable, label, fontsize=24):
     cbar.ax.tick_params(labelsize=fontsize)
     return cbar
 
-def save_plot(filename):
-    plt.savefig("test_graphs/" + filename, dpi=300, bbox_inches='tight')
+def save_plot(file_path, filename):
+    file_path = os.path.join("test_graphs", file_path)
+    os.makedirs(file_path, exist_ok=True)
+    path = os.path.join(file_path, filename)
+    plt.savefig(path, dpi=300, bbox_inches='tight')
     plt.close()
 
 def plot_markers(ax, combined_mass, snr_values, mass1_values, mass2_values, iter_values, colors, max_snr):
@@ -59,7 +62,7 @@ def plot_snr_vs_mass(event_name, strain, total_time, results, max_snr):
     format_plot(ax, 'Mass (solar mass)', 'SNR', f'SNR vs Mass {event_name}({strain}) (Time taken: {total_time:.2f} seconds), iterations: {max(iter_values)}')
     create_colorbar(ax, mappable, 'SNR Index')
     fig.tight_layout()
-    save_plot(f'SNR_vs_Combined_Mass_for_{event_name}_{strain}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.png')
+    save_plot("snr_vs_mass", f'SNR_vs_Combined_Mass_for_{event_name}_{strain}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.png')
 
 def plot_snr_vs_iteration(event_name, strain, total_time, results):
     mass1_values, mass2_values, snr_values, iter_values, combined_mass = sort_results(results)
@@ -70,7 +73,7 @@ def plot_snr_vs_iteration(event_name, strain, total_time, results):
     mappable = ScalarMappable(norm=norm, cmap=cm.viridis)
     create_colorbar(ax, mappable, 'Combined Mass (Solar Masses)')
     fig.tight_layout(pad=5.0)
-    save_plot(f'SNR_vs_Iterations_for_{event_name}_{strain}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.png')
+    save_plot("snr_vs_iteration", f'SNR_vs_Iterations_for_{event_name}_{strain}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.png')
 
 def plot_snr_timeseries(event_name, strain, max_snr, freqs, params, fdata_jax, psd_jax, delta_f):
     fig, ax = plt.subplots(figsize=(18, 12))
@@ -84,7 +87,7 @@ def plot_snr_timeseries(event_name, strain, max_snr, freqs, params, fdata_jax, p
     format_plot(ax, 'SNR Index', 'SNR', f'Optimal Template {event_name}({strain}) SNR:{snrp:.2f}', fontsize=18)
     ax.tick_params(axis='both', which='major', labelsize=18)
     fig.tight_layout()
-    save_plot(f'Optimal_Template_for_{event_name}_{strain}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.png')
+    save_plot("snr_timeseries", f'Optimal_Template_for_{event_name}_{strain}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.png')
 
 def sort_results(results):
     mass1_values = []
@@ -178,7 +181,7 @@ def pycbc_plots(EVENT_NAME, STRAIN, conditioned, total_time, max_snr):
     axs[1].legend()
 
     filename = f"snr_and_aligned_{EVENT_NAME}_{STRAIN}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.png"
-    save_plot(filename)
+    save_plot("snr_and_aligned", filename)
 
     subtracted = conditioned - aligned
 
@@ -212,4 +215,4 @@ def pycbc_plots(EVENT_NAME, STRAIN, conditioned, total_time, max_snr):
     plt.subplots_adjust(hspace=0.5)
 
     filename = "contours_{}_{}_T_{:.2f}_AR_{:.3f}_MI_{}_{}_SEED{}.png".format(EVENT_NAME, STRAIN, TEMPERATURE, ANNEALING_RATE, MAX_ITERS, LRL, LRU, SEED)
-    save_plot(filename)
+    save_plot("contours", filename)
