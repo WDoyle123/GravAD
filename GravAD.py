@@ -9,10 +9,14 @@ from ripple import ms_to_Mc_eta
 import math
 import time
 import pickle
+import re
+import os
+import glob
 
 import helper
 import plots
 from to_csv import process_files
+
 
 # Constants
 SAMPLING_RATE = 2048
@@ -497,20 +501,18 @@ def real_signals():
                  results[i] = {'snr': snr[i], 'mass1s': mass1[i], 'mass2s': mass2[i], "combined_mass": (mass1[i] + mass2[i]), 'iters': int(iterations[i])}
  
             
-        
+             # Save results to be called later for graphing
+             filename = f"{event}_{strain}_results.pkl"
+             folder = "test_graphs/results"
+             helper.save_pickle(folder, filename, results)
+             
+             # Get the parameters that acheived the highest SNR
              max_snr = get_max_snr_array(results, event, strain, total_time)
+
+             # Collect the SNRs for each detector of the same event
              combined_snr.append(max_snr['snr'])
  
              print(f"Time Taken: {total_time:.2f}, Templates:{iterations[-1]}")
-             print(f"Plotting Results...")
- 
-             # tracing type plots aswell as SNR time-series
-             plots.plot_snr_vs_mass(event, strain, total_time, results, max_snr)
-             plots.plot_snr_vs_iteration(event, strain, total_time, results )
-             plots.plot_snr_timeseries(event, strain, max_snr, freqs, params, fdata_jax, psd_jax, delta_f)
- 
-             # contour, alignment and SNR time-series plots
-             plots.pycbc_plots(event, strain, conditioned, total_time, max_snr)
  
              all_results.append(get_max_snr_array(results, event, strain, total_time))
  
@@ -523,10 +525,72 @@ def real_signals():
 
 
 def plotter():
+    """
+    This function plots the signal-to-noise ratio (SNR) vs. mass for a set of results.
+    It searches through a results folder and plot folders to match and plot relevant data.
+    """
+
+    # Regex pattern to match event and strain from the filename
+    pattern = r'(\w+)_(\w+)_.*'
+
+    # Directory containing results files
+    results_dir = "test_graphs/results"
+
+    # List all files in the results directory
+    results_files = os.listdir(results_dir)
     
-    # Read pickle files
-    with open(f"test_graphs/{filename}", "rb") as f:
-        results = pickle.load(f)
+    # Sort the list of files for consistency
+    results_files.sort()
+
+    # Iterate through each file in the results directory
+    for results_file in results_files:
+
+        # Create the full path to the results file
+        results_file_path = os.path.join(results_dir, results_file)
+
+        # Open and unpickle the results file
+        with open(results_file_path, "rb") as f:
+            results = pickle.load(f)
+
+        # Match the filename to the pattern to extract the event and strain
+        match = re.match(pattern, results_file)
+        if match:
+            event = match.group(1)
+            strain = match.group(2)
+        else:
+            print(f"Pattern not found in the file name: {results_file}")
+            continue  # Skip to the next file if pattern not found
+
+        print(f"Plotting: {event}({strain})")
+
+        # Directory containing max_snr files
+        max_snr_dir = "test_graphs/max_snr"
+        
+        # The pattern to match for max_snr files
+        max_snr_file_pattern = f"{event}_{strain}_max_snr*"
+        
+        # Find all files in the snr_dir that match the snr_file_pattern
+        matching_max_snr_files = glob.glob(os.path.join(max_snr_dir, max_snr_file_pattern))
+
+        # Loop over each matching file
+        for matching_max_snr_file in matching_max_snr_files:
+            
+            # Open and unpickle the snr file
+            with open(matching_max_snr_file, "rb") as f:
+                max_snr = pickle.load(f)
+
+            total_time = max_snr['time']
+
+            # Plot the snr vs mass for the given event and strain
+            print("Plotting mass vs snr")
+            plots.plot_snr_vs_mass(event, strain, results, max_snr)
+            print("Plotting snr vs iteration")
+            plots.plot_snr_vs_iteration(event, strain, total_time, results)
+            print("Plotting snr timeseries")
+            plots.plot_snr_timeseries(event, strain, max_snr)
+            print("Plotting alignment and contours\n")
+            # contour, alignment and SNR time-series plots
+            plots.pycbc_plots(event, strain, total_time, max_snr)
 
 
 def main():
@@ -540,7 +604,8 @@ def main():
     # Analyse real signals
     real_signals()
     
-
+    # Plot graphs
+    plotter()
 
     process_files()
 

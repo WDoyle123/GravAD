@@ -44,7 +44,8 @@ def plot_markers(ax, combined_mass, snr_values, mass1_values, mass2_values, iter
     ax.legend(fontsize=21)
 
 
-def plot_snr_vs_mass(event_name, strain, total_time, results, max_snr):
+def plot_snr_vs_mass(event_name, strain, results, max_snr):
+    total_time = max_snr['time']
     mass1_values, mass2_values, snr_values, iter_values, combined_mass = sort_results(results)
     fig, ax = plt.subplots(figsize=(18, 12))
     n = len(mass1_values)
@@ -75,7 +76,14 @@ def plot_snr_vs_iteration(event_name, strain, total_time, results):
     fig.tight_layout(pad=5.0)
     save_plot("snr_vs_iteration", f'SNR_vs_Iterations_for_{event_name}_{strain}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.png')
 
-def plot_snr_timeseries(event_name, strain, max_snr, freqs, params, fdata_jax, psd_jax, delta_f):
+def plot_snr_timeseries(event_name, strain, max_snr):
+
+    from GravAD import preprocess, frequency_series
+    from GravAD import params
+
+    fdata_jax, delta_f, psd_jax, _ = preprocess(event_name, strain)
+    freqs = frequency_series(delta_f)
+    
     fig, ax = plt.subplots(figsize=(18, 12))
     mass1 = max_snr['mass1']
     mass2 = max_snr['mass2']
@@ -105,11 +113,16 @@ def sort_results(results):
 
     return mass1_values, mass2_values, snr_values, iter_values, combined_mass
 
-def pycbc_plots(EVENT_NAME, STRAIN, conditioned, total_time, max_snr):
+def pycbc_plots(EVENT_NAME, STRAIN, total_time, max_snr):
 
     # From the PyCBC tutorial 3: https://colab.research.google.com/github/gwastro/pycbc-tutorials/blob/master/tutorial/3_WaveformMatchedFilter.ipynb
-    merger = Merger(EVENT_NAME)
+    
+    from GravAD import preprocess
 
+    _, _, _, conditioned = preprocess(EVENT_NAME, STRAIN)
+    
+    merger = Merger(EVENT_NAME)
+    
     # GravAD calculated Masses
     mass1 = max_snr['mass1']
     mass2 = max_snr['mass2']
