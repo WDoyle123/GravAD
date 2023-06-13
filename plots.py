@@ -10,8 +10,7 @@ from pycbc.filter import resample_to_delta_t, highpass
 from pycbc.filter import sigma
 import pylab
 import os
-from GravAD import MAX_ITERS, SEED, TEMPERATURE, ANNEALING_RATE, LRL, LRU
-from GravAD import gen_waveform, pre_matched_filter
+from constants import MAX_ITERS, SEED, TEMPERATURE, ANNEALING_RATE, LRL, LRU
 
 def format_plot(ax, xlabel, ylabel, title, fontsize=24):
     ax.tick_params(axis='both', which='major', labelsize=fontsize)
@@ -77,7 +76,7 @@ def plot_snr_vs_iteration(event_name, strain, total_time, results):
     save_plot("snr_vs_iteration", f'SNR_vs_Iterations_for_{event_name}_{strain}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.png')
 
 def plot_snr_timeseries(event_name, strain, max_snr):
-
+    from GravAD import gen_waveform, pre_matched_filter
     from GravAD import preprocess, frequency_series
     from GravAD import params
 

@@ -16,32 +16,9 @@ import glob
 import helper
 import plots
 from to_csv import process_files
+from constants import *
 
 
-# Constants
-SAMPLING_RATE = 2048
-LOW_FREQ_CUTOFF = 20.
-HIGH_FREQ_CUTOFF = 1000.
-MAX_ITERS = 500
-TEMPERATURE = 1 # Initial Temperature
-ADV_TEMPERATURE = 2 # Advanced Temperature
-ANNEALING_RATE = 0.99
-LRU = 1.5 # Learning Rate Upper
-LRL = 5.5 # Learning Rate Lower
-SEED = 1
-STRAINS = ['H1', 'L1']
-EVENTS = [
-    "GW150914", "GW151012", "GW151226", "GW170104", "GW170608", "GW170729",
-    "GW170809", "GW170814", "GW170817", "GW170818", "GW170823"]
-
-# Define waveform parameters
-chi1 = 0.
-chi2 = 0.
-tc = 1.0
-phic = 1.
-dist_mpc = 440.
-inclination = 0.
-params = [chi1, chi2, dist_mpc, tc, phic, inclination]
 
 # Currently set to min template 
 def gen_init_mass(rng_key):
@@ -467,61 +444,137 @@ def get_max_snr_array(results, EVENT_NAME, STRAIN, total_time):
     return max_snr
 
 def real_signals():
-
+    """
+    This function processes real gravitational wave signals and calculates their SNR. It also generates optimal mass
+    for the signals and saves the results for future analysis.
+    """
     all_results = []
 
     for event in EVENTS:
         combined_snr = []
         for strain in STRAINS:
 
+             # Start processing the signal for the specific event and strain
              print(f"Analysing Event: {event}, Strain: {strain}")
- 
+
+             # Preprocess the data to get the conditioned data, PSD, and frequency data
              fdata_jax, delta_f, psd_jax, conditioned = preprocess(event, strain)
- 
-             # Calculate the inverse PSD
+
+             # Calculate the inverse PSD for the event
              inverse_psd_jax = 1 / psd_jax
- 
+
+             # Get the frequency series for the signal
              freqs = frequency_series(delta_f)
- 
+
+             # Generate a random key and initial masses
              rng_key = random.PRNGKey(SEED)
              init_mass1, init_mass2, rng_key = gen_init_mass(rng_key)
- 
+
+             # Make the function with the initial parameters and data
              make_function(fdata_jax, psd_jax, freqs, params, delta_f)
+             
+             # Start the timer to monitor the performance
              start_time = time.time()
+             
+             # Get the optimal mass for the signal
              snr,  mass1, mass2 = get_optimal_mass(init_mass1, init_mass2, freqs, params, fdata_jax, psd_jax, delta_f)
+             
+             # Calculate the total time taken for the process
              total_time = time.time() - start_time
- 
+
+             # Convert the results into array format
              snr = jnp.array(snr)
              mass1 = jnp.array(mass1)
              mass2 = jnp.array(mass2)
              iterations = jnp.array([i for i in range(len(snr))])
              results = {}
- 
-             for i in range(max(iterations)):
-                 results[i] = {'snr': snr[i], 'mass1s': mass1[i], 'mass2s': mass2[i], "combined_mass": (mass1[i] + mass2[i]), 'iters': int(iterations[i])}
- 
+
+             # Store the results in a dictionary for each iteration
+             for s, m1, m2, i in zip(snr, mass1, mass2, iterations):
+                results[int(i)] = {'snr': float(s), 'mass1s': float(m1), 'mass2s': float(m2), "combined_mass": float(m1 + m2), 'iters': int(i)}
             
-             # Save results to be called later for graphing
+             # Save the results for future analysis and graphing
              filename = f"{event}_{strain}_results.pkl"
              folder = "test_graphs/results"
              helper.save_pickle(folder, filename, results)
              
-             # Get the parameters that acheived the highest SNR
+             # Get the parameters that achieved the highest SNR
              max_snr = get_max_snr_array(results, event, strain, total_time)
 
              # Collect the SNRs for each detector of the same event
              combined_snr.append(max_snr['snr'])
- 
+
+             # Print out the total time taken and the number of iterations performed
              print(f"Time Taken: {total_time:.2f}, Templates:{iterations[-1]}")
- 
+
+             # Append the results to the all_results list
              all_results.append(get_max_snr_array(results, event, strain, total_time))
- 
+
+        # Calculate the combined SNR for the event and print it
         snr_for_event = jnp.sqrt(combined_snr[0]**2 + combined_snr[1]**2)
         print(f"SNR for {event}: {snr_for_event:.2f}\n")
- 
+
+        # Save all the results in a text file for later analysis
         filename = f"all_results_for_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.txt"
         folder = "test_graphs/all_results"
         helper.save_txt(folder, filename, all_results)
+
+def simulated_signals():
+
+    pattern = r'(\d+_\d+)'
+    folder = "simulated_signals/"
+    files = os.listdir(folder)
+    files.sort()
+    
+    merger = Merger("GW150914")
+    strain = merger.strain("H1") * 1e22
+    strain = resample_to_delta_t(highpass(strain, 15.0), 1 / 2048)
+    conditioned = strain.crop(2, 2)
+    delta_f = conditioned.delta_f
+    #psd_jax = psd_func(conditioned)
+    freqs = frequency_series(delta_f)
+    psd_jax = jnp.asarray([1] * len(freqs))
+    rng_key = random.PRNGKey(SEED)
+    init_mass1, init_mass2, rng_key = gen_init_mass(rng_key)
+
+    for file in files:
+        file_path = os.path.join(folder, file)
+    
+        with open(file_path, "rb") as f:
+            fdata = pickle.load(f)
+      
+        print(file)
+        fdata_jax = jnp.asarray(fdata)
+
+        make_function(fdata_jax, psd_jax, freqs, params, delta_f)
+        start_time = time.time()
+        snr, mass1, mass2 = get_optimal_mass(init_mass1, init_mass2, freqs, params, fdata_jax, psd_jax, delta_f)
+        total_time = time.time() - start_time
+
+        snr = jnp.array(snr)
+        mass1 = jnp.array(mass1)
+        mass2 = jnp.array(mass2)
+        iterations = jnp.array([i for i in range(len(snr))])
+        results = {}
+
+        # Store the results in a dictionary for each iteration
+        for s, m1, m2, i in zip(snr, mass1, mass2, iterations):
+            results[int(i)] = {'snr': float(s), 'mass1s': float(m1), 'mass2s': float(m2), "combined_mass": float(m1 + m2), 'iters': int(i)}
+
+        match = re.search(pattern, file)
+        event = match.group(1)
+
+        # Save the results for future analysis and graphing
+        filename = f"{event}_results.pkl"
+        folder_save = "test_graphs/results_simulated"
+        helper.save_pickle(folder_save, filename, results)
+
+        max_snr = get_max_snr_array(results, event, "simulated_signal" , total_time)
+        snrp = max_snr['snr']
+
+        # Print out the total time taken and the number of iterations performed
+        print(f"Time Taken: {total_time:.2f}, Templates:{iterations[-1]}, SNR: {snrp}")
+
 
 
 def plotter():
@@ -584,12 +637,14 @@ def plotter():
             # Plot the snr vs mass for the given event and strain
             print("Plotting mass vs snr")
             plots.plot_snr_vs_mass(event, strain, results, max_snr)
+
             print("Plotting snr vs iteration")
             plots.plot_snr_vs_iteration(event, strain, total_time, results)
+
             print("Plotting snr timeseries")
             plots.plot_snr_timeseries(event, strain, max_snr)
+
             print("Plotting alignment and contours\n")
-            # contour, alignment and SNR time-series plots
             plots.pycbc_plots(event, strain, total_time, max_snr)
 
 
@@ -604,9 +659,13 @@ def main():
     # Analyse real signals
     real_signals()
     
+    # Analyse simulated signals (WIP)
+    #simulated_signals()
+    
     # Plot graphs
     plotter()
 
+    # Get a compilation of results in csv
     process_files()
 
 if __name__ == "__main__":
