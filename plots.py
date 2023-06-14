@@ -77,12 +77,41 @@ def plot_snr_vs_iteration(event_name, strain, total_time, results):
 
 def plot_snr_timeseries(event_name, strain, max_snr):
     from GravAD import gen_waveform, pre_matched_filter
-    from GravAD import preprocess, frequency_series
+    from GravAD import preprocess, frequency_series, psd_func
     from GravAD import params
+    import glob
+    import pickle
 
-    fdata_jax, delta_f, psd_jax, _ = preprocess(event_name, strain)
-    freqs = frequency_series(delta_f)
-    
+    try:
+        fdata_jax, delta_f, psd_jax, _ = preprocess(event_name, strain)
+        freqs = frequency_series(delta_f)
+    except Exception as e:
+        merger = Merger("GW150914")
+        strain_sim = merger.strain("H1") * 1e22
+        strain_sim = resample_to_delta_t(highpass(strain_sim, 15.0), 1 / 2048)
+        conditioned = strain_sim.crop(2, 2)
+        delta_f = conditioned.delta_f
+        psd_jax = psd_func(conditioned)
+        # The pattern to match for max_snr files
+        file_pattern = f"{event_name}_{strain}*"
+        
+        # Find all files in the snr_dir that match the snr_file_pattern
+        matching_files = glob.glob(os.path.join("simulated_signals/", file_pattern))
+        
+        # Loop over each matching file
+        for matching_file in matching_files:
+            # Open and unpickle the snr file
+            with open(matching_file, "rb") as f:
+                fdata = pickle.load(f)
+                fdata_jax = jnp.asarray(fdata)
+        
+        # If the frequency_series function fails in the try block, it will execute here
+        try:
+            freqs = frequency_series(delta_f)
+        except Exception as e:
+            print(f"Failed to generate frequency series. Error: {e}")
+            return
+
     fig, ax = plt.subplots(figsize=(18, 12))
     mass1 = max_snr['mass1']
     mass2 = max_snr['mass2']
@@ -90,7 +119,7 @@ def plot_snr_timeseries(event_name, strain, max_snr):
     template = gen_waveform(mass1, mass2, freqs, params)
     snr = pre_matched_filter(template, fdata_jax, psd_jax, delta_f)
     plt.plot(snr)
-
+    
     format_plot(ax, 'SNR Index', 'SNR', f'Optimal Template {event_name}({strain}) SNR:{snrp:.2f}', fontsize=18)
     ax.tick_params(axis='both', which='major', labelsize=18)
     fig.tight_layout()
@@ -117,9 +146,12 @@ def pycbc_plots(EVENT_NAME, STRAIN, total_time, max_snr):
     # From the PyCBC tutorial 3: https://colab.research.google.com/github/gwastro/pycbc-tutorials/blob/master/tutorial/3_WaveformMatchedFilter.ipynb
     
     from GravAD import preprocess
-
-    _, _, _, conditioned = preprocess(EVENT_NAME, STRAIN)
     
+    if not EVENT_NAME.startswith("GW"):
+        return None
+    
+    _, _, _, conditioned = preprocess(EVENT_NAME, STRAIN)
+
     merger = Merger(EVENT_NAME)
     
     # GravAD calculated Masses

@@ -438,7 +438,12 @@ def get_max_snr_array(results, EVENT_NAME, STRAIN, total_time):
     max_snr['time'] = total_time
 
     filename = f"{EVENT_NAME}_{STRAIN}_max_snr_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.pkl"
-    folder = "test_graphs/max_snr"
+
+    if STRAIN == "simulated_signal":
+        folder = "test_graphs/max_snr_simulated"
+    else:
+        folder = "test_graphs/max_snr_real"
+
     helper.save_pickle(folder, filename, max_snr)
 
     return max_snr
@@ -495,7 +500,7 @@ def real_signals():
             
              # Save the results for future analysis and graphing
              filename = f"{event}_{strain}_results.pkl"
-             folder = "test_graphs/results"
+             folder = "test_graphs/results_real"
              helper.save_pickle(folder, filename, results)
              
              # Get the parameters that achieved the highest SNR
@@ -531,9 +536,9 @@ def simulated_signals():
     strain = resample_to_delta_t(highpass(strain, 15.0), 1 / 2048)
     conditioned = strain.crop(2, 2)
     delta_f = conditioned.delta_f
-    #psd_jax = psd_func(conditioned)
+    psd_jax = psd_func(conditioned)
     freqs = frequency_series(delta_f)
-    psd_jax = jnp.asarray([1] * len(freqs))
+    #psd_jax = jnp.asarray([1] * len(freqs))
     rng_key = random.PRNGKey(SEED)
     init_mass1, init_mass2, rng_key = gen_init_mass(rng_key)
 
@@ -571,24 +576,19 @@ def simulated_signals():
 
         max_snr = get_max_snr_array(results, event, "simulated_signal" , total_time)
         snrp = max_snr['snr']
+        mass1 = max_snr['mass1']
+        mass2 = max_snr['mass2']
 
         # Print out the total time taken and the number of iterations performed
-        print(f"Time Taken: {total_time:.2f}, Templates:{iterations[-1]}, SNR: {snrp}")
+        print(f"Time Taken: {total_time:.2f}, Templates:{iterations[-1]}, SNR: {snrp}, mass1: {mass1}, mass2: {mass2}")
 
 
 
-def plotter():
+def plotter(pattern, results_dir, max_snr_dir):
     """
     This function plots the signal-to-noise ratio (SNR) vs. mass for a set of results.
     It searches through a results folder and plot folders to match and plot relevant data.
     """
-
-    # Regex pattern to match event and strain from the filename
-    pattern = r'(\w+)_(\w+)_.*'
-
-    # Directory containing results files
-    results_dir = "test_graphs/results"
-
     # List all files in the results directory
     results_files = os.listdir(results_dir)
     
@@ -614,13 +614,10 @@ def plotter():
             print(f"Pattern not found in the file name: {results_file}")
             continue  # Skip to the next file if pattern not found
 
-        print(f"Plotting: {event}({strain})")
-
-        # Directory containing max_snr files
-        max_snr_dir = "test_graphs/max_snr"
+        print(f"Plotting: {event}_{strain}")
         
         # The pattern to match for max_snr files
-        max_snr_file_pattern = f"{event}_{strain}_max_snr*"
+        max_snr_file_pattern = f"{event}_{strain}*"
         
         # Find all files in the snr_dir that match the snr_file_pattern
         matching_max_snr_files = glob.glob(os.path.join(max_snr_dir, max_snr_file_pattern))
@@ -650,6 +647,16 @@ def plotter():
 
 def main():
     
+    pattern_real = r'(\w+)_(\w+)_.*'
+    pattern_simu = r'(\d+)_(\d+)_.*'
+
+    folder_results_real = "test_graphs/results_real"
+    folder_results_sim  = "test_graphs/results_simulated"
+
+    folder_max_snr_real = "test_graphs/max_snr_real"
+    folder_max_snr_sim  = "test_graphs/max_snr_simulated"
+
+
     # Clear folders
     helper.clear_folder("test_graphs")
 
@@ -657,13 +664,14 @@ def main():
     jit_compile()
 
     # Analyse real signals
-    real_signals()
+    if True:
+        real_signals()
+        plotter(pattern_real, folder_results_real, folder_max_snr_real)
     
     # Analyse simulated signals (WIP)
-    #simulated_signals()
-    
-    # Plot graphs
-    plotter()
+    if True:
+        simulated_signals()
+        plotter(pattern_simu, folder_results_sim, folder_max_snr_sim)
 
     # Get a compilation of results in csv
     process_files()
