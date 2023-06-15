@@ -40,6 +40,7 @@ GravAD offers a cutting-edge approach to gravitational wave detection, leveragin
 - Optimised for GPUs
 - Graphs and Results
 - Works using real LIGO data
+- Works with simulated signals
 
 ## Installation
 
