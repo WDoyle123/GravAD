@@ -189,8 +189,8 @@ def gen_waveform(mass1, mass2, freqs, params):
     # return template_no_nan scaled by factor of 1e22
     return template_no_nan * 1e22
 
-@jit
-def pre_matched_filter(template, data, psd, delta_f):
+
+def pre_matched_filter(template, data, psd, delta_f, signal_type):
     """
     computes the snr and checks if the length of template, data and psd are the same.
     If not the same length raises a ValueError
@@ -214,13 +214,38 @@ def pre_matched_filter(template, data, psd, delta_f):
         psd = psd + 1e-9
         snr = calc_snr(template, data, 1 / psd, delta_f)
 
+        # Create a boolean mask
+        mask = (jnp.arange(snr.shape[0]) >= 5000) & (jnp.arange(snr.shape[0]) < (snr.shape[0] - 5000))
+
         # Returns the SNR time series array, removing artifacts
-        return snr[5000:len(snr)-5000]
+        # or rolling for real and sim signals
+
+        def true_func(snr):
+            
+            """
+            mask = (jnp.arange(snr.shape[0]) >= 5000) & (jnp.arange(snr.shape[0]) < (snr.shape[0] - 5000))
+            snr = snr * mask
+            return jnp.where(jnp.isnan(snr), 0, snr)
+            """
+            return snr[5000:-5000]
+        
+        def false_func(snr):
+            snr = jnp.roll(snr, 15000)
+            return snr[5000:-5000]
+
+
+        snr_sliced = jax.lax.cond(signal_type == 11,
+                            true_func,
+                            false_func,
+                            operand=snr)
+
+
+        return snr_sliced
     else:
         # If lengths of input arrays do not match raises ValueError
         return ValueError("Length of template, data, and psd do not match")
 
-def make_function(data, psd, freqs, params, delta_f):
+def make_function(data, psd, freqs, params, delta_f, signal_type):
     """
     Creates a function to compute the max snr for a given mass
 
@@ -234,10 +259,12 @@ def make_function(data, psd, freqs, params, delta_f):
     Returns:
     function: The function takes an input mass and returns the max snr
     """
+    signal_type = jax.lax.cond(signal_type == 11, None, lambda _: 11, None, lambda _: 10)
+
     @jit
     def get_snr(mass1, mass2):
         ftemplate_jax = jnp.array(gen_waveform(mass1, mass2, freqs, params))
-        snr = pre_matched_filter(ftemplate_jax, data, psd, delta_f)
+        snr = pre_matched_filter(ftemplate_jax, data, psd, delta_f, signal_type)
         return snr.max()
     return get_snr
 
@@ -269,10 +296,10 @@ def one_step(state, _):
     tuple: The updated state of the system and the snr and mass values.
     """
     # Unpack the state variables
-    current_i, mass1, mass2, rng_key, temperature, annealing_rate, data, psd, freqs, params, delta_f = state
+    current_i, mass1, mass2, rng_key, temperature, annealing_rate, data, psd, freqs, params, delta_f, signal_type = state
 
     # Function to get SNR
-    snr_func = make_function(data, psd, freqs, params, delta_f)
+    snr_func = make_function(data, psd, freqs, params, delta_f, signal_type)
 
     # Define gradients of SNR function with respect to each mass
     dsnr1 = jit(grad(lambda m1, m2: snr_func(m1, m2), argnums=0))
@@ -317,11 +344,11 @@ def one_step(state, _):
     temperature *= annealing_rate
 
     # Create a new state
-    new_state = (current_i+1, new_mass1, new_mass2, rng_key, temperature, annealing_rate, data, psd, freqs, params, delta_f)
+    new_state = (current_i+1, new_mass1, new_mass2, rng_key, temperature, annealing_rate, data, psd, freqs, params, delta_f, signal_type)
 
     return new_state, (snr, mass1, mass2)
 
-def get_optimal_mass(init_mass1, init_mass2, freqs, params, data, psd, delta_f):
+def get_optimal_mass(init_mass1, init_mass2, freqs, params, data, psd, delta_f, signal_type):
     """
     Function to find the optimal mass values. It initializes the system state, and then runs the 
     one_step function for a set number of iterations.
@@ -338,12 +365,15 @@ def get_optimal_mass(init_mass1, init_mass2, freqs, params, data, psd, delta_f):
     Returns:
     tuple: History of SNR, mass1, and mass2 values.
     """
+
+    signal_type = jax.lax.cond(signal_type == 11, None, lambda _: 11, None, lambda _: 10)
+        
     # Generate rng key
     rng_key = random.PRNGKey(SEED)
     
     # Define the initial state of the system
     temperature = TEMPERATURE
-    state = (0, init_mass1, init_mass2, rng_key, temperature, ANNEALING_RATE, data, psd, freqs, params, delta_f)
+    state = (0, init_mass1, init_mass2, rng_key, temperature, ANNEALING_RATE, data, psd, freqs, params, delta_f, signal_type)
     
     snr_hist = []
     mass1_hist = []
@@ -406,7 +436,7 @@ def jit_compile():
     freqs = frequency_series(delta_f)
     rng_key = random.PRNGKey(SEED)
     init_mass1, init_mass2, rng_key = gen_init_mass(rng_key)
-    results = get_optimal_mass(init_mass1, init_mass2, freqs, params, fdata_jax, psd_jax, delta_f)
+    results = get_optimal_mass(init_mass1, init_mass2, freqs, params, fdata_jax, psd_jax, delta_f, 11)
     print("Compiled! \n")
 
     return None
@@ -476,13 +506,13 @@ def real_signals():
              init_mass1, init_mass2, rng_key = gen_init_mass(rng_key)
 
              # Make the function with the initial parameters and data
-             make_function(fdata_jax, psd_jax, freqs, params, delta_f)
+             make_function(fdata_jax, psd_jax, freqs, params, delta_f, 11)
              
              # Start the timer to monitor the performance
              start_time = time.time()
              
              # Get the optimal mass for the signal
-             snr,  mass1, mass2 = get_optimal_mass(init_mass1, init_mass2, freqs, params, fdata_jax, psd_jax, delta_f)
+             snr,  mass1, mass2 = get_optimal_mass(init_mass1, init_mass2, freqs, params, fdata_jax, psd_jax, delta_f, 11)
              
              # Calculate the total time taken for the process
              total_time = time.time() - start_time
@@ -551,9 +581,9 @@ def simulated_signals():
         print(file)
         fdata_jax = jnp.asarray(fdata)
 
-        make_function(fdata_jax, psd_jax, freqs, params, delta_f)
+        make_function(fdata_jax, psd_jax, freqs, params, delta_f, 10)
         start_time = time.time()
-        snr, mass1, mass2 = get_optimal_mass(init_mass1, init_mass2, freqs, params, fdata_jax, psd_jax, delta_f)
+        snr, mass1, mass2 = get_optimal_mass(init_mass1, init_mass2, freqs, params, fdata_jax, psd_jax, delta_f, 10)
         total_time = time.time() - start_time
 
         snr = jnp.array(snr)

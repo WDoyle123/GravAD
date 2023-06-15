@@ -85,6 +85,7 @@ def plot_snr_timeseries(event_name, strain, max_snr):
     try:
         fdata_jax, delta_f, psd_jax, _ = preprocess(event_name, strain)
         freqs = frequency_series(delta_f)
+        signal_type = 11
     except Exception as e:
         merger = Merger("GW150914")
         strain_sim = merger.strain("H1") * 1e22
@@ -94,6 +95,8 @@ def plot_snr_timeseries(event_name, strain, max_snr):
         psd_jax = psd_func(conditioned)
         # The pattern to match for max_snr files
         file_pattern = f"{event_name}_{strain}*"
+        fdata_jax = None
+        signal_type = 10
         
         # Find all files in the snr_dir that match the snr_file_pattern
         matching_files = glob.glob(os.path.join("simulated_signals/", file_pattern))
@@ -117,7 +120,7 @@ def plot_snr_timeseries(event_name, strain, max_snr):
     mass2 = max_snr['mass2']
     snrp = max_snr['snr']
     template = gen_waveform(mass1, mass2, freqs, params)
-    snr = pre_matched_filter(template, fdata_jax, psd_jax, delta_f)
+    snr = pre_matched_filter(template, fdata_jax, psd_jax, delta_f, signal_type)
     plt.plot(snr)
     
     format_plot(ax, 'SNR Index', 'SNR', f'Optimal Template {event_name}({strain}) SNR:{snrp:.2f}', fontsize=18)

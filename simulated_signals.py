@@ -8,7 +8,7 @@ import jax
 from jax import random
 import jax.numpy as jnp
 import helper
-SAMPLING_RATE = 4096
+SAMPLING_RATE = 8192
 
 def write_waveform(mass1, mass2, waveform_data):
     file_path = "simulated_signals/"
@@ -21,6 +21,17 @@ def sim_signal(mass1, mass2):
     freqs = frequency_series(delta_f)
     waveform_template_freq_domain = gen_waveform(mass1, mass2, freqs, params)
     noisy_waveform_freq_domain = np.real(waveform_template_freq_domain)
+    
+    # add noise
+    
+    test1 = noisy_waveform_freq_domain.copy()
+
+    noisy_waveform_freq_domain = noisy_waveform_freq_domain + psd_jax
+
+    test2 = noisy_waveform_freq_domain
+
+    print(f"Before: {test1[100]}, After: {test2[100]}")
+
     """  
     # Add noise
     sqrt_psd = np.sqrt(psd_jax)
@@ -37,11 +48,11 @@ def sim_signal(mass1, mass2):
     # Take the real part of the output, assuming the imaginary part is negligible
     noisy_waveform_time_domain = np.real(noisy_waveform_time_domain)
     """
-    
+    print(len(noisy_waveform_freq_domain))
     write_waveform(mass1, mass2, noisy_waveform_freq_domain)
 
 def main():
-    mass1s = mass2s = [i for i in range(20, 111, 10)]
+    mass1s = mass2s = [i for i in range(50, 80, 10)]
 
     for mass1 in mass1s:
         for mass2 in mass2s:
