@@ -11,6 +11,7 @@ from pycbc.filter import sigma
 import pylab
 import os
 from constants import MAX_ITERS, SEED, TEMPERATURE, ANNEALING_RATE, LRL, LRU
+import re
 
 def format_plot(ax, xlabel, ylabel, title, fontsize=24):
     ax.tick_params(axis='both', which='major', labelsize=fontsize)
@@ -42,7 +43,6 @@ def plot_markers(ax, combined_mass, snr_values, mass1_values, mass2_values, iter
         ax.scatter(mass, snr, marker='x', color=color, s=400, linewidth=3, label=f"{marker_name}: mass1: {mass1:.2f}, mass2: {mass2:.2f}, SNR: {snr_value:.2f}, iter: {iteration}")
     ax.legend(fontsize=21)
 
-
 def plot_snr_vs_mass(event_name, strain, results, max_snr):
     total_time = max_snr['time']
     mass1_values, mass2_values, snr_values, iter_values, combined_mass = sort_results(results)
@@ -55,12 +55,22 @@ def plot_snr_vs_mass(event_name, strain, results, max_snr):
     last_key = list(results.keys())[-1]
     
     plot_markers(ax, combined_mass, snr_values, mass1_values, mass2_values, iter_values, colors, max_snr)
-
+    
     for i in range(n - 1):
         plt.plot(combined_mass[i:i+2], snr_values[i:i+2], "o-", color=colors[i], alpha=0.15, markersize=5)
-
+    
     format_plot(ax, 'Mass (solar mass)', 'SNR', f'SNR vs Mass {event_name}({strain}) (Time taken: {total_time:.2f} seconds), iterations: {max(iter_values)}')
     create_colorbar(ax, mappable, 'SNR Index')
+
+    pattern = r"(\d+)_(\d+)"
+    if re.match(pattern, event_name + "_" + strain):
+        combined = int(event_name) + int(strain)
+        print(combined)
+        ax.set_ylim(bottom=min(snr_values)-5, top=max(snr_values)+5)  # Set the limits of y-axis based on your SNR values
+        line, = ax.plot([combined, combined], [min(snr_values)-5, max(snr_values)+5], 'r--')  # Dashed red line
+        line.set_label('Combined mass')  # Set the label for this line
+        ax.legend()  # Display the legend
+
     fig.tight_layout()
     save_plot("snr_vs_mass", f'SNR_vs_Combined_Mass_for_{event_name}_{strain}_T_{TEMPERATURE:.2f}_AR_{ANNEALING_RATE:.3f}_MI_{MAX_ITERS}_{LRL}_{LRU}_SEED{SEED}.png')
 

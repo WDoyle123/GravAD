@@ -365,9 +365,9 @@ def get_optimal_mass(init_mass1, init_mass2, freqs, params, data, psd, delta_f, 
             if snr > peak_snr:
                 peak_snr = snr
                 peak_iter = i
-            if i - peak_iter > 5:
-                alpha = 0.8
             if i - peak_iter > 10:
+                alpha = 0.8
+            if i - peak_iter > 25:
                 break
 
         return snr_hist, mass1_hist, mass2_hist
