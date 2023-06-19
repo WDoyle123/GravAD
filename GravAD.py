@@ -19,7 +19,6 @@ from to_csv import process_files
 from constants import *
 
 
-
 # Currently set to min template 
 def gen_init_mass(rng_key):
     """
@@ -283,72 +282,7 @@ def psd_func(conditioned):
     psd = inverse_spectrum_truncation(psd, int(4 * conditioned.sample_rate), low_frequency_cutoff = 15)
     return jnp.array(psd)
 
-@jit
-def one_step(state, _):
-    """
-    Simulates one step of simulated annealing. Calculates the gradient of the snr with respect to the masses,
-    updates the masses using the learning rate and the gradients, then applies a random perturbation to the masses.
-
-    Args:
-    state (tuple): Current state of the system, includes the mass values, RNG key, temperature, annealing rate, and other parameters.
-
-    Returns:
-    tuple: The updated state of the system and the snr and mass values.
-    """
-    # Unpack the state variables
-    current_i, mass1, mass2, rng_key, temperature, annealing_rate, data, psd, freqs, params, delta_f, signal_type = state
-
-    # Function to get SNR
-    snr_func = make_function(data, psd, freqs, params, delta_f, signal_type)
-
-    # Define gradients of SNR function with respect to each mass
-    dsnr1 = jit(grad(lambda m1, m2: snr_func(m1, m2), argnums=0))
-    dsnr2 = jit(grad(lambda m1, m2: snr_func(m1, m2), argnums=1))
-
-    # Get SNR using current state
-    snr = jax.lax.convert_element_type(snr_func(mass1, mass2), jnp.float32)
-    
-    # Get gradient of SNR 
-    gradient1 = jax.lax.convert_element_type(dsnr1(mass1, mass2), jnp.float32)
-    gradient2 = jax.lax.convert_element_type(dsnr2(mass1, mass2), jnp.float32)
-
-    # Get RNG 
-    rng_key, subkey1 = random.split(rng_key)
-    rng_key, subkey2 = random.split(rng_key)
-
-    # Randomise the learning rate
-    learning_rate1 = random.uniform(subkey1, minval=LRL, maxval=LRU)
-    learning_rate2 = random.uniform(subkey2, minval=LRL, maxval=LRU)
-
-    # Generate perturbations scaled by the temperature (simulated annealing)
-    perturbation1 = random.normal(subkey1) * temperature
-    perturbation2 = random.normal(subkey2) * temperature
-
-    # Update mass1
-    new_mass1 = mass1 + (learning_rate1 * gradient1) + perturbation1
-
-    # Avoid mass1 falling below 11 solar masses and above 120 solar masses
-    new_mass1 = jax.lax.cond(new_mass1 < 11., lambda _: 11. + jnp.abs(perturbation1), lambda _: new_mass1, None)
-    new_mass1 = jax.lax.cond(new_mass1 > 120., lambda _: 120. - jnp.abs(perturbation1), lambda _: new_mass1, None)
-    new_mass1 = jax.lax.cond(jnp.isnan(new_mass1), lambda _: jnp.nan, lambda _: new_mass1, None)
-    
-    # Update mass2
-    new_mass2 = mass2 + (learning_rate2 * gradient2) + perturbation2
-
-    # Avoid mass2 falling below 11 solar masses and above 120 solar masses
-    new_mass2 = jax.lax.cond(new_mass2 < 11., lambda _: 11. + jnp.abs(perturbation2), lambda _: new_mass2, None)
-    new_mass2 = jax.lax.cond(new_mass2 > 120., lambda _: 120. - jnp.abs(perturbation2), lambda _: new_mass2, None)
-    new_mass2 = jax.lax.cond(jnp.isnan(new_mass2), lambda _: jnp.nan, lambda _: new_mass2, None)
-    
-    # Update the temperature for the annealing
-    temperature *= annealing_rate
-
-    # Create a new state
-    new_state = (current_i+1, new_mass1, new_mass2, rng_key, temperature, annealing_rate, data, psd, freqs, params, delta_f, signal_type)
-
-    return new_state, (snr, mass1, mass2)
-
-def get_optimal_mass(init_mass1, init_mass2, freqs, params, data, psd, delta_f, signal_type):
+def get_optimal_mass(init_mass1, init_mass2, freqs, params, data, psd, delta_f, signal_type, optimiser='sgd_adam_sa'):
     """
     Function to find the optimal mass values. It initializes the system state, and then runs the 
     one_step function for a set number of iterations.
@@ -365,37 +299,100 @@ def get_optimal_mass(init_mass1, init_mass2, freqs, params, data, psd, delta_f, 
     Returns:
     tuple: History of SNR, mass1, and mass2 values.
     """
-
+    from optimisers import sgd, sgd_sa, sgd_adam, sgd_adam_sa
+    print(f"using optimiser: {optimiser}")
     signal_type = jax.lax.cond(signal_type == 11, None, lambda _: 11, None, lambda _: 10)
         
     # Generate rng key
     rng_key = random.PRNGKey(SEED)
-    
-    # Define the initial state of the system
-    temperature = TEMPERATURE
-    state = (0, init_mass1, init_mass2, rng_key, temperature, ANNEALING_RATE, data, psd, freqs, params, delta_f, signal_type)
     
     snr_hist = []
     mass1_hist = []
     mass2_hist = []
     peak_snr = 0.0
     peak_iter = 0
+    alpha = 0.9
+    momentum1 = momentum2 = 0
 
-    for i in range(MAX_ITERS):
-        state, (snr, mass1, mass2) = one_step(state, i)
-        snr_hist.append(snr)
-        mass1_hist.append(mass1)
-        mass2_hist.append(mass2)
+    # Stochastic Gradient Descent
+    if optimiser == 'sgd':
+        state = (0, init_mass1, init_mass2, rng_key, data, psd, freqs, params, delta_f, signal_type)
 
-        if snr > peak_snr:
-            peak_snr = snr
-            peak_iter = i
-        if i - peak_iter > 10:
-            state = state[:4] + (ADV_TEMPERATURE,) + state[5:]  # Create a new tuple with the updated temperature
-        if i - peak_iter > 25:
-            break
-     
-    return snr_hist, mass1_hist, mass2_hist
+        for i in range(MAX_ITERS):
+            state, (snr, mass1, mass2) = sgd(state, i)
+            snr_hist.append(snr)
+            mass1_hist.append(mass1)
+            mass2_hist.append(mass2)
+
+            if snr > peak_snr:
+                peak_snr = snr
+                peak_iter = i
+            if i - peak_iter > 25:
+                break
+
+        return snr_hist, mass1_hist, mass2_hist
+
+    # Stochastic Gradient Descent + Simulated Annealing
+    if optimiser == 'sgd_sa':
+        state = (0, init_mass1, init_mass2, rng_key, TEMPERATURE, ANNEALING_RATE, data, psd, freqs, params, delta_f, signal_type)
+
+        for i in range(MAX_ITERS):
+            state, (snr, mass1, mass2) = sgd_sa(state, i)
+            snr_hist.append(snr)
+            mass1_hist.append(mass1)
+            mass2_hist.append(mass2)
+
+            if snr > peak_snr:
+                peak_snr = snr
+                peak_iter = i
+            if i - peak_iter > 10:
+                state = state[:4] + (ADV_TEMPERATURE,) + state[5:]
+            if i - peak_iter > 25:
+                break
+
+        return snr_hist, mass1_hist, mass2_hist
+
+    # Stochastic Gradient Descent + Adaptive Moment Estimation
+    if optimiser == "sgd_adam":
+        state = (0, init_mass1, init_mass2, rng_key, momentum1, momentum2, alpha, data, psd, freqs, params, delta_f, signal_type)
+
+        for i in range(MAX_ITERS):
+            state, (snr, mass1, mass2) = sgd_adam(state, i)
+            snr_hist.append(snr)
+            mass1_hist.append(mass1)
+            mass2_hist.append(mass2)
+
+            if snr > peak_snr:
+                peak_snr = snr
+                peak_iter = i
+            if i - peak_iter > 5:
+                alpha = 0.8
+            if i - peak_iter > 10:
+                break
+
+        return snr_hist, mass1_hist, mass2_hist
+
+    # Stochastic Gradient Descent + Adaptive Moment Estimation + Simulated Annealing
+    if optimiser == "sgd_adam_sa":
+        state = (0, init_mass1, init_mass2, rng_key, TEMPERATURE, ANNEALING_RATE, momentum1, momentum2, alpha, data, psd, freqs, params, delta_f, signal_type)
+
+        for i in range(MAX_ITERS):
+            state, (snr, mass1, mass2) = sgd_adam_sa(state, i)
+            snr_hist.append(snr)
+            mass1_hist.append(mass1)
+            mass2_hist.append(mass2)
+            
+            if snr > peak_snr:
+                peak_snr = snr
+                peak_iter = i
+            if i - peak_iter > 10:
+                alpha = 0.8
+                state = state[:4] + (ADV_TEMPERATURE, ) + state[5:]
+            if i - peak_iter > 25:
+                break
+           
+
+        return snr_hist, mass1_hist, mass2_hist
 
 def preprocess(event, strain):
 

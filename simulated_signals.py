@@ -13,6 +13,7 @@ SAMPLING_RATE = 8192
 def write_waveform(mass1, mass2, waveform_data):
     file_path = "simulated_signals/"
     file_name = f"{mass1}_{mass2}_noisy_waveform_freq_domain_{SEED}.pkl"
+    print(file_name)
     helper.save_pickle(file_path, file_name, waveform_data)
     
 def sim_signal(mass1, mass2):
@@ -22,15 +23,14 @@ def sim_signal(mass1, mass2):
     waveform_template_freq_domain = gen_waveform(mass1, mass2, freqs, params)
     noisy_waveform_freq_domain = np.real(waveform_template_freq_domain)
     
-    # add noise
+    # add noise 
     
     test1 = noisy_waveform_freq_domain.copy()
 
-    noisy_waveform_freq_domain = noisy_waveform_freq_domain + psd_jax
+    noisy_waveform_freq_domain = noisy_waveform_freq_domain + psd_jax # + or * ?
 
     test2 = noisy_waveform_freq_domain
 
-    print(f"Before: {test1[100]}, After: {test2[100]}")
 
     """  
     # Add noise
@@ -48,11 +48,10 @@ def sim_signal(mass1, mass2):
     # Take the real part of the output, assuming the imaginary part is negligible
     noisy_waveform_time_domain = np.real(noisy_waveform_time_domain)
     """
-    print(len(noisy_waveform_freq_domain))
     write_waveform(mass1, mass2, noisy_waveform_freq_domain)
 
 def main():
-    mass1s = mass2s = [i for i in range(50, 80, 10)]
+    mass1s = mass2s = [i for i in range(20, 110, 10)]
 
     for mass1 in mass1s:
         for mass2 in mass2s:
