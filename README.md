@@ -25,6 +25,7 @@
 - [Usage](#usage)
 - [Screenshots](#screenshots)
 - [Authors](#authors)
+- [Citing](#citing)
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
 
@@ -108,6 +109,25 @@ Check out [graphs](./graphs) for more!
 
 - [@WDoyle123](https://github.com/WDoyle123)
 - Supervisor [@andrew-lundgren](https://github.com/andrew-lundgren)
+
+## Citing
+
+If you using `GravAD` in your work, please cite [our paper](https://doi.org/10.59973/emjsr.10):
+
+```
+@article{Doyle_2023,
+  author={Doyle, William},
+  title={Searching For Black Holes Using Auto Differentiation},
+  volume={1},
+  url={https://ipipublishing.org/index.php/emjsr/article/view/10},
+  DOI={10.59973/emjsr.10},
+  abstractNote={&amp;lt;p&amp;gt;This study presents GravAD, a novel approach for detecting gravitational waves using automatic differentiation and JAX. GravAD demonstrates comparable signal-to-noise ratio and mass values to established LIGO pipelines with a significant reduction in the number of templates. Limitations include the inability to handle binary neutron star systems and some lower-mass black holes. Leveraging JAX’s acceleration, GravAD offers potential as a rapid preliminary tool for gravitational wave detection. Future work includes further optimisation of functions, exploration of alternative optimisation algorithms, real-time data analysis adaptation, and expanding the scope to handle a broader range of astrophysical sources.&amp;lt;/p&amp;gt;},
+  journal={Emerging Minds Journal for Student Research},
+  year={2023},
+  month={Jul.},
+  pages={17–38}
+}
+```
 
 ## Acknowledgements
 
