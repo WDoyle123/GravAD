@@ -112,7 +112,7 @@ Check out [graphs](./graphs) for more!
 
 ## Citing
 
-If you using `GravAD` in your work, please cite [our paper](https://doi.org/10.59973/emjsr.10):
+If you use `GravAD` in your work, please cite [our paper](https://doi.org/10.59973/emjsr.10):
 
 ```
 @article{Doyle_2023,
